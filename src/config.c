@@ -1,7 +1,7 @@
 #include "config.h"
 
 /**
- * Print usage description to stdout
+ * print usage description]
  * @method print_usage
  */
 void print_usage() {
@@ -20,19 +20,19 @@ void print_usage() {
  * @method display_config
  * @param  conf           [description]
  */
-void display_config() {
+void display_config(Config *co) {
 
-  if (conf->server_address != FALSE) {
-    printf("Server address:\t%s\n", conf->server_address);
+  if (co->server_address != FALSE) {
+    printf("Server address:\t%s\n", co->server_address);
   }
-  printf("Port:\t\t%s\n", conf->port);
-  printf("Mode:\t\t%s\n", MODE_STRING[conf->mode]);
-  printf("Video timeout:\t%d\n", conf->timeout);
-  printf("Video file:\t%s\n", conf->video_file);
-  printf("Config file:\t%s\n", conf->config_file);
-  printf("Log file:\t%s\n", conf->log_name);
+  printf("Port:\t\t%s\n", co->port);
+  printf("Mode:\t\t%s\n", MODE_STRING[co->mode]);
+  printf("Video timeout:\t%d\n", co->timeout);
+  printf("Video file:\t%s\n", co->video_file);
+  printf("Config file:\t%s\n", co->config_file);
+  printf("Log file:\t%s\n", co->log_name);
 
-  if (conf->avahi)
+  if (co->avahi)
     puts("Use Avahi:\tTrue");
   else
     puts("Use Avahi:\tFalse");
@@ -62,7 +62,6 @@ Config *clear_config(Config *in) {
   in->config_file = FALSE;
   in->log_name = FALSE;
   in->avahi = FALSE;
-
   return in;
 }
 
@@ -99,26 +98,28 @@ void free_config(Config *input) {
  * @param  settings  Config to store input
  * @return           Config struct (malloced)
  */
-Config *read_conf_file(Config *settings) {
+Config *read_conf_file(Config *settings, Config *cli_flags) {
   FILE *fp;
   char bufr[BUF_SIZE];
   char val[50];
   char var[50];
 
-  if (NULL == conf->config_file || access(conf->config_file, R_OK) == -1) {
+  if ((access(cli_flags->config_file, R_OK) == -1)) {
     if (conf->verbose)
-      puts("\nConfig file does not exist\nUsing hardcoded defaults.");
+      puts("\nConfig file does not exist\nUsing defaults.");
     return NULL;
   }
 
   Config *tmp = malloc(sizeof(Config));
 
-  if ((fp = fopen(conf->config_file, "r")) != NULL) {
+  if ((fp = fopen(cli_flags->config_file, "r")) != NULL) {
     while (!feof(fp)) {
       fgets(bufr, BUF_SIZE, fp);
       sscanf(bufr, "%s %s", val, var);
       stoupper(val);
 
+      if (strncmp(val, "#", 1) == 0)
+        continue;
       /* Log file */
       if (strcmp(val, "LOG_FILE") == 0) {
         tmp->log_name = malloc(BUF_SIZE);
@@ -126,12 +127,12 @@ Config *read_conf_file(Config *settings) {
       }
 
       /* sensor timeout time */
-      if (strcmp(val, "TIMEOUT") == 0) {
+      if (strncmp(val, "TIMEOUT", 7) == 0) {
         tmp->timeout = atoi(var);
       }
 
       /* daemon run mode */
-      if (strcmp(val, "MODE") == 0) {
+      if (strncmp(val, "MODE", 4) == 0) {
         if (strncmp("SERVER", var, 6) == 0) {
           tmp->mode = SERVER;
         }
@@ -166,23 +167,26 @@ Config *read_conf_file(Config *settings) {
         if (strncmp(var, "YES", 3) == 0) {
           tmp->avahi = TRUE;
         }
+        if (strncmp(var, "NO", 2) == 0) {
+          tmp->avahi = FALSE;
+        }
       }
 
-      /* clear the temp buffers for the next loop */
+      /* do stuff */
       memset(bufr, '\0', BUF_SIZE - 1);
       memset(val, '\0', 50);
       memset(var, '\0', 50);
     }
     fclose(fp);
   } else {
-     /* error processing, couldn't open file */
-     puts("Unable to open config file");
+    puts("unable to open config file");
+    /* error processing, couldn't open file */
   }
   return tmp;
 }
 
 /**
- * Combine hardcoded/config file and cli options
+ * [combine_config description]
  * @method combine_config
  * @param  cli_flags      [description]
  * @param  conf_file      [description]
@@ -243,7 +247,7 @@ Config *combine_config(Config *cli_flags, Config *conf_file) {
   if (cli_flags->timeout != 0) {
     tmp->timeout = cli_flags->timeout;
   } else {
-    if (conf_file->timeout) {
+    if (conf_file->timeout != 0) {
       tmp->timeout = conf_file->timeout;
     } else {
       tmp->timeout = DEFAULT_TIMEOUT;
@@ -309,6 +313,7 @@ Config *combine_config(Config *cli_flags, Config *conf_file) {
     }
   }
 
+  // free_config(cli_flags);
   free_config(conf_file);
 
   // Return the config
@@ -419,7 +424,6 @@ Config *read_cli_inputs(int argc, char *argv[]) {
 
     case 'g':
       tmp->config_file = optarg;
-      conf->config_file = optarg;
       break;
 
     case '?':
@@ -431,6 +435,9 @@ Config *read_cli_inputs(int argc, char *argv[]) {
     }
   }
 
+  /* Instead of reporting ‘--verbose’
+     and ‘--brief’ as they are encountered,
+     we report the final status resulting from them. */
   if (conf->verbose)
     puts("verbose flag is set");
 
@@ -440,6 +447,11 @@ Config *read_cli_inputs(int argc, char *argv[]) {
     while (optind < argc)
       printf("%s ", argv[optind++]);
     putchar('\n');
+  }
+
+  if (tmp->config_file == NULL) {
+    tmp->config_file = malloc(BUF_SIZE);
+    strcpy(tmp->config_file, DEFAULT_CONFIG_FILE);
   }
   return tmp;
 }

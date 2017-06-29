@@ -1,0 +1,6 @@
+{
+	"files.associations": {
+		"corecrt_malloc.h": "c",
+		"config.h": "c"
+	}
+}
