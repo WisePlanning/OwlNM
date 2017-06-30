@@ -2,8 +2,7 @@
 
 /**
  * Start the selected video player program
- * @param  video_file [description]
- * @return            [description]
+ * @return pid_t of spawned process
  */
 
 pid_t play_video () {

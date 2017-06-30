@@ -172,6 +172,7 @@ int client_run_loop() {
 }
 
 #elif __arm__
+
 /* Lib event bug causes hang on arm so we use select instead */
 int client_run_loop() {
 
