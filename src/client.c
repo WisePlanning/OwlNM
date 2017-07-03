@@ -208,7 +208,7 @@ int client_run_loop() {
   FD_ZERO(&master);
   FD_SET(listen_fd, &master);
 
-  /* Wait for timeout or person to leave */
+  /* Wait for timeout or client to leave */
   while (TRUE) {
     read_set = master;
     fd_max = listen_fd + 1;
