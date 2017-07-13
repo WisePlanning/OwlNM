@@ -50,16 +50,18 @@ Config *clear_config(Config *in) {
 
   /* create a new malloc'd struct */
   in = malloc(sizeof(Config));
-	in->server_address = NULL;
-	in->verbose = 0;
+
+  /* set all vals to FALSE */
+  in->server_address = FALSE;
+  in->verbose = FALSE;
   in->mode = 0;
-	in->port = NULL;
+  in->port = FALSE;
   in->timeout = 0;
-	in->video_file = NULL;
-	in->video_player = NULL;
-	in->config_file = NULL;
-	in->log_name = NULL;
-	in->avahi = 0;
+  in->video_file = FALSE;
+  in->video_player = FALSE;
+  in->config_file = FALSE;
+  in->log_name = FALSE;
+  in->avahi = FALSE;
   return in;
 }
 
@@ -197,10 +199,10 @@ Config *combine_config(Config *cli_flags, Config *conf_file) {
   tmp = clear_config(tmp);
 
   tmp->server_address = malloc(BUF_SIZE);
-	if (cli_flags->server_address != NULL) {
+  if (cli_flags->server_address) {
     strcpy(tmp->server_address, cli_flags->server_address);
   } else {
-		if (conf_file != NULL && conf_file->server_address != NULL) {
+    if (conf->server_address) {
       strcpy(tmp->server_address, conf_file->server_address);
     } else {
       strcpy(tmp->server_address, DEFAULT_SERVER);
@@ -211,8 +213,8 @@ Config *combine_config(Config *cli_flags, Config *conf_file) {
   if (cli_flags->verbose) {
     tmp->verbose = cli_flags->verbose;
   } else {
-		if (conf_file != NULL && conf_file->verbose) {
-			tmp->verbose = conf_file->verbose;
+    if (conf->verbose) {
+      tmp->verbose = conf->verbose;
     } else {
       tmp->verbose = 0;
     }
@@ -222,8 +224,8 @@ Config *combine_config(Config *cli_flags, Config *conf_file) {
   if (cli_flags->mode != ERROR) {
     tmp->mode = cli_flags->mode;
   } else {
-		if (conf_file != NULL && conf_file->mode) {
-			tmp->mode = conf_file->mode;
+    if (conf_file->mode) {
+      tmp->mode = conf->mode;
     } else {
       tmp->mode = CLIENT;
     }
@@ -234,7 +236,7 @@ Config *combine_config(Config *cli_flags, Config *conf_file) {
   if (cli_flags->port != 0) {
     strcpy(tmp->port, cli_flags->port);
   } else {
-		if (conf_file != NULL && conf_file->port != NULL) {
+    if (conf_file->port) {
       strcpy(tmp->port, conf_file->port);
     } else {
       strcpy(tmp->port, DEFAULT_PORT);
@@ -245,7 +247,7 @@ Config *combine_config(Config *cli_flags, Config *conf_file) {
   if (cli_flags->timeout != 0) {
     tmp->timeout = cli_flags->timeout;
   } else {
-		if (conf_file != NULL && conf_file->timeout != 0) {
+    if (conf_file->timeout != 0) {
       tmp->timeout = conf_file->timeout;
     } else {
       tmp->timeout = DEFAULT_TIMEOUT;
@@ -254,10 +256,10 @@ Config *combine_config(Config *cli_flags, Config *conf_file) {
 
   // Video file
   tmp->video_file = malloc(BUF_SIZE);
-	if (cli_flags->video_file != NULL) {
+  if (cli_flags->video_file) {
     strcpy(tmp->video_file, cli_flags->video_file);
   } else {
-		if (conf_file != NULL && conf_file->video_file != NULL) {
+    if (conf_file->video_file) {
       strcpy(tmp->video_file, conf_file->video_file);
     } else {
       strcpy(tmp->video_file, DEFAULT_VIDEO);
@@ -266,10 +268,10 @@ Config *combine_config(Config *cli_flags, Config *conf_file) {
 
   // Video player
   tmp->video_player = malloc(BUF_SIZE);
-	if (cli_flags->video_player != NULL) {
+  if (cli_flags->video_player) {
     strcpy(tmp->video_player, cli_flags->video_player);
   } else {
-		if (conf_file != NULL && conf_file->video_player != NULL) {
+    if (conf_file->video_player) {
       strcpy(tmp->video_player, conf_file->video_player);
     } else {
       strcpy(tmp->video_player, DEFAULT_PLAYER);
@@ -278,10 +280,10 @@ Config *combine_config(Config *cli_flags, Config *conf_file) {
 
   // config file
   tmp->config_file = malloc(BUF_SIZE);
-	if (cli_flags->config_file != NULL) {
+  if (cli_flags->config_file) {
     strcpy(tmp->config_file, cli_flags->config_file);
   } else {
-		if (conf_file != NULL && conf_file->config_file != NULL) {
+    if (conf_file->config_file) {
       strcpy(tmp->config_file, conf_file->config_file);
     } else {
       strcpy(tmp->config_file, DEFAULT_CONFIG_FILE);
@@ -290,10 +292,10 @@ Config *combine_config(Config *cli_flags, Config *conf_file) {
 
   // Logname
   tmp->log_name = malloc(BUF_SIZE);
-	if (cli_flags->log_name != NULL) {
+  if (cli_flags->log_name) {
     strcpy(tmp->log_name, cli_flags->log_name);
   } else {
-		if (conf_file != NULL && conf_file->log_name != NULL) {
+    if (conf_file->log_name) {
       strcpy(tmp->log_name, conf_file->log_name);
     } else {
       strcpy(tmp->log_name, DEFAULT_LOG_FILE);
@@ -304,7 +306,7 @@ Config *combine_config(Config *cli_flags, Config *conf_file) {
   if (cli_flags->avahi) {
     tmp->avahi = cli_flags->avahi;
   } else {
-		if (conf_file != NULL && conf_file->avahi) {
+    if (conf_file->avahi) {
       tmp->avahi = conf_file->avahi;
     } else {
       tmp->avahi = FALSE;
@@ -312,7 +314,6 @@ Config *combine_config(Config *cli_flags, Config *conf_file) {
   }
 
   // free_config(cli_flags);
-	if(conf_file != NULL)
   free_config(conf_file);
 
   // Return the config
@@ -352,8 +353,7 @@ Config *read_cli_inputs(int argc, char *argv[]) {
         {"video", required_argument, 0, 'V'},
         {"log", required_argument, 0, 'l'},
         {"config", required_argument, 0, 'g'},
-			{0, 0, 0, 0}
-		};
+        {0, 0, 0, 0}};
 
     /* getopt_long stores the option index here. */
     int option_index = 0;
@@ -435,8 +435,8 @@ Config *read_cli_inputs(int argc, char *argv[]) {
     }
   }
 
-  /* Instead of reporting  E-verbose E
-     and  E-brief Eas they are encountered,
+  /* Instead of reporting ‘--verbose’
+     and ‘--brief’ as they are encountered,
      we report the final status resulting from them. */
   if (conf->verbose)
     puts("verbose flag is set");

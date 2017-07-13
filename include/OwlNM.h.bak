@@ -1,5 +1,5 @@
-#ifndef __OwlNM_h_
-#define __OwlNM_h_
+#ifndef __owlnm_h_
+#define __owlnm_h_
 
 #include "config.h"
 

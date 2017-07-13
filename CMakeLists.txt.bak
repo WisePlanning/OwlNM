@@ -42,4 +42,4 @@ FILE(GLOB SOURCES "src/*.c")
 
 ADD_EXECUTABLE(OwlNM ${SOURCES})
 
-TARGET_LINK_LIBRARIES(OwlNM wiringPi event avahi-common avahi-client)
+TARGET_LINK_LIBRARIES(OwlNM event avahi-common avahi-client)

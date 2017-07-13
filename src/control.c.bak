@@ -111,12 +111,12 @@ int control_run_loop() {
 		exit(EXIT_FAILURE);
 	}
 
- if (wiringPiSetupGpio () == -1)
+	/* check for gpio access */
+	if (wiringPiSetupPhys () == -1)
 		exit(EXIT_FAILURE);
 
-  pinMode (LED, OUTPUT) ;         //set the pin to output
-  // switch gpio pin to disable relay
-  digitalWrite(LED, ON);
+	// setup gpio pin for output
+	pinMode (11, OUTPUT);
 
 	// use avahi to find the server
 	// if there is no server address,
