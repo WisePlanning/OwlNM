@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.0)
 
-project(main)
+project(OwlNM)
 SET (OwlNM_VERSION_MAJOR 0)
 SET (OwlNM_VERSION_MINOR 8)
 
@@ -42,4 +42,7 @@ FILE(GLOB SOURCES "src/*.c")
 
 ADD_EXECUTABLE(OwlNM ${SOURCES})
 
-TARGET_LINK_LIBRARIES(OwlNM wiringPi event avahi-common avahi-client)
+TARGET_LINK_LIBRARIES(OwlNM  event avahi-common avahi-client)
+
+INSTALL(TARGETS OwlNM DESTINATION /usr/local/bin COMPONENT binaries)
+install(FILES include/OwlNM.conf DESTINATION /usr/local/etc/ COMPONENT config)

@@ -84,7 +84,7 @@
 #define UTIMEOUT 0
 #define DEFAULT_PORT "4000"
 #define SERVICE_NAME "_OwlNM._tcp"
-#define DEFAULT_CONFIG_FILE "/etc/OwlNM.conf"
+#define DEFAULT_CONFIG_FILE "/usr/local/etc/OwlNM.conf"
 #define DEFAULT_VIDEO "/home/wise/Movies/main.h264"
 #define DEFAULT_LOG_FILE "/var/log/OwlNM.log"
 #define DEFAULT_SERVER "192.168.0.101"
