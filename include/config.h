@@ -30,7 +30,7 @@
 #ifdef __FreeBSD__
 #include </usr/include/dev/evdev/input.h>
 #else
-#include <input.h>
+#include <linux/input.h>
 #endif
 
 /* Libevent. */

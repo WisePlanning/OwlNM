@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
       if (rootCheck()) {
 
         /* start the controller run loop in the controller fork */
-        control_run_loop()
+        control_run_loop();
       } else {
 
         if (conf->verbose) {
