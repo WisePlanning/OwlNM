@@ -1,5 +1,6 @@
 #include "common.h"
 
+
 /**
  * [get_socket description]
  * @method get_socket
@@ -119,6 +120,7 @@ int send_stop(int sockfd) {
 		puts("Sending stop to server\n");
 
 	ret = send(sockfd, STOP, sizeof(STOP), 0);
+	digitalWrite (11, 0);        // Turn On the LED
 
 	if (ret < 0) {
 
@@ -147,6 +149,7 @@ int send_start(int sockfd) {
 		puts("Sending start to server\n");
 
 	ret = send(sockfd, PLAY, sizeof(PLAY), 0);
+	digitalWrite (11, 1);        // Turn On the LED
 
 	if (ret < 0) {
 

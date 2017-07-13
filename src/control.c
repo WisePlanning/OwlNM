@@ -111,6 +111,13 @@ int control_run_loop() {
 		exit(EXIT_FAILURE);
 	}
 
+	/* check for gpio access */
+	if (wiringPiSetupPhys () == -1)
+		exit(EXIT_FAILURE);
+
+	// setup gpio pin for output
+	pinMode (11, OUTPUT);
+
 	// use avahi to find the server
 	// if there is no server address,
 	if (conf->avahi || NULL == conf->server_address) {
@@ -131,7 +138,7 @@ int control_run_loop() {
 	FD_SET(sensor_device_2, &master); // first sensor
 	FD_SET(listen_fd, &master);     // connection to server
 
-  /* copy of the file descriptors for the sensors */
+	/* copy of the file descriptors for the sensors */
 	int fds[2];
 	memset(&fds, 0, 2);
 

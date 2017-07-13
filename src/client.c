@@ -1,6 +1,6 @@
 #include "client.h"
 
-#if __amd64__ || __i386__
+
 
 #define EVLOOP_NO_EXIT_ON_EMPTY 0x04
 /**
@@ -171,124 +171,123 @@ int client_run_loop() {
   return (EXIT_SUCCESS);
 }
 
-#elif __arm__
 
-/* Lib event bug causes hang on arm so we use select instead */
-int client_run_loop() {
 
-  // timeout struct
-  struct timeval tv;
+// /* Lib event bug causes hang on arm so we use select instead */
+// int client_run_loop() {
 
-  fd_set master;
-  fd_set read_set;
+//   // timeout struct
+//   struct timeval tv;
 
-  // buffer for recv
-  char buffer[BUF_SIZE];
+//   fd_set master;
+//   fd_set read_set;
 
-  // max number for select
-  int fd_max;
+//   // buffer for recv
+//   char buffer[BUF_SIZE];
 
-  // socket connected to the server
-  int listen_fd;
+//   // max number for select
+//   int fd_max;
 
-  // use avahi to find the server
-  // if there is no server address,
-  if (conf->avahi || NULL == conf->server_address) {
-    do {
-      avahi_client();
-    } while (NULL == conf->server_address);
-  }
+//   // socket connected to the server
+//   int listen_fd;
 
-  do {
-    listen_fd = get_socket();
-  } while (listen_fd <= 0);
+//   // use avahi to find the server
+//   // if there is no server address,
+//   if (conf->avahi || NULL == conf->server_address) {
+//     do {
+//       avahi_client();
+//     } while (NULL == conf->server_address);
+//   }
 
-  reset_timer(&tv);
+//   do {
+//     listen_fd = get_socket();
+//   } while (listen_fd <= 0);
 
-  FD_ZERO(&master);
-  FD_SET(listen_fd, &master);
+//   reset_timer(&tv);
 
-  /* Wait for timeout or client to leave */
-  while (TRUE) {
-    read_set = master;
-    fd_max = listen_fd + 1;
+//   FD_ZERO(&master);
+//   FD_SET(listen_fd, &master);
 
-    int ret = select(fd_max, &read_set, NULL, NULL, &tv);
-    if (ret == -1) {
-      perror("Error reading data!\n");
-      do {
-        /* reconnect */
-        shutdown(listen_fd, 2);
+//   /* Wait for timeout or client to leave */
+//   while (TRUE) {
+//     read_set = master;
+//     fd_max = listen_fd + 1;
 
-        if (conf->avahi)
-          avahi_client();
+//     int ret = select(fd_max, &read_set, NULL, NULL, &tv);
+//     if (ret == -1) {
+//       perror("Error reading data!\n");
+//       do {
+//         /* reconnect */
+//         shutdown(listen_fd, 2);
 
-        listen_fd = get_socket();
-        sleep(5);
+//         if (conf->avahi)
+//           avahi_client();
 
-      } while (listen_fd <= 0);
+//         listen_fd = get_socket();
+//         sleep(5);
 
-      FD_ZERO(&master);
-      FD_SET(listen_fd, &master);
+//       } while (listen_fd <= 0);
 
-      reset_timer(&tv);
-    } else if (ret == 0) {
-      reset_timer(&tv);
-      if (conf->verbose) {
-        puts("timeout");
-      }
+//       FD_ZERO(&master);
+//       FD_SET(listen_fd, &master);
 
-    } else {
+//       reset_timer(&tv);
+//     } else if (ret == 0) {
+//       reset_timer(&tv);
+//       if (conf->verbose) {
+//         puts("timeout");
+//       }
 
-      /* Check the link with the server */
-      if (FD_ISSET(listen_fd, &read_set)) {
-        ret = read(listen_fd, &buffer, BUF_SIZE);
+//     } else {
 
-        /* if disconnected, try to reconnect */
-        if (ret == 0) {
-          perror("Connection Lost. Reconnecting.\n");
-          do {
-            /* reconnect */
-            shutdown(listen_fd, 2);
+//       /* Check the link with the server */
+//       if (FD_ISSET(listen_fd, &read_set)) {
+//         ret = read(listen_fd, &buffer, BUF_SIZE);
 
-            if (conf->avahi)
-              avahi_client();
+//         /* if disconnected, try to reconnect */
+//         if (ret == 0) {
+//           perror("Connection Lost. Reconnecting.\n");
+//           do {
+//             /* reconnect */
+//             shutdown(listen_fd, 2);
 
-            listen_fd = get_socket();
-            sleep(5);
+//             if (conf->avahi)
+//               avahi_client();
 
-          } while (listen_fd <= 0);
+//             listen_fd = get_socket();
+//             sleep(5);
 
-          FD_ZERO(&master);
-          FD_SET(listen_fd, &master);
+//           } while (listen_fd <= 0);
 
-          reset_timer(&tv);
-        } else {
+//           FD_ZERO(&master);
+//           FD_SET(listen_fd, &master);
 
-          /* Check for play */
-          if (strncmp(buffer, PLAY, 4) == 0) {
-            if (conf->verbose)
-              puts("Play");
+//           reset_timer(&tv);
+//         } else {
 
-            /* Start the video player */
-            if (!play_video())
-              perror("Error");
-          }
+//           /* Check for play */
+//           if (strncmp(buffer, PLAY, 4) == 0) {
+//             if (conf->verbose)
+//               puts("Play");
 
-          /* Check for stop */
-          if ((strncmp(buffer, STOP, 4) == 0)) {
-            if (conf->verbose)
-              puts("Kill");
+//             /* Start the video player */
+//             if (!play_video())
+//               perror("Error");
+//           }
 
-            /* Kill any running video players */
-            if (!stop_video())
-              perror("Error");
-          }
-        }
-      }
-    }
-  }
-  return 0;
-} /* control_run_loop */
+//           /* Check for stop */
+//           if ((strncmp(buffer, STOP, 4) == 0)) {
+//             if (conf->verbose)
+//               puts("Kill");
 
-#endif
+//             /* Kill any running video players */
+//             if (!stop_video())
+//               perror("Error");
+//           }
+//         }
+//       }
+//     }
+//   }
+//   return 0;
+// } /* control_run_loop */
+

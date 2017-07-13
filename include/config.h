@@ -28,14 +28,10 @@
 
 /* Input events */
 #ifdef __FreeBSD__
-#include "/usr/src/sys/dev/evdev/input.h"
-#elif __APPLE__
-#ifdef TARGET_OS_MAC
+#include </usr/include/dev/evdev/input.h>
+#else
 #include <input.h>
 #endif
-#else
-#include <linux/input.h>
-#endif /* __FreeBSD__ */
 
 /* Libevent. */
 #include <event2/buffer.h>
@@ -59,6 +55,8 @@
 
 #endif
 
+#include <wiringPi.h>
+
 #include "client.h"
 #include "common.h"
 #include "control.h"
@@ -71,6 +69,8 @@
 #define BUF_SIZE 1024
 #define PLAY "play"
 #define STOP "stop"
+#define ENTER "H"
+#define LEAVE "L"
 #define KEY_RELEASE 0
 #define KEY_PRESS 1
 #define TRUE 1
