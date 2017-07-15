@@ -5,7 +5,7 @@
  * @method print_usage
  */
 void print_usage() {
-  printf("Version %d.%d", MAJOR_VERSION, MINOR_VERSION);
+  printf("Version %d.%d\n", MAJOR_VERSION, MINOR_VERSION);
   printf("-v : Verbose\n");
   printf("-s : Server mode\n");
   printf("-m : Control mode\n");
@@ -14,7 +14,7 @@ void print_usage() {
          "server)\n");
   printf("-t : Video Timeout (seconds)\n");
   printf("-h : help\n");
-} /* print_usage */
+}
 
 /**
  * Print the input config
@@ -37,7 +37,7 @@ void display_config(Config *co) {
     puts("Use Avahi:\tTrue");
   else
     puts("Use Avahi:\tFalse");
-} /* display_config */
+}
 
 /**
  * Empty a config struct and return a malloced empty struct

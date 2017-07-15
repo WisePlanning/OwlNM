@@ -12,8 +12,6 @@
  */
 int main(int argc, char *argv[]) {
 
-  
-
   /* Cli configuration struct */
   Config *cli_flags;
 

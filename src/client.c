@@ -114,6 +114,7 @@ int client_run_loop() {
 		return (EXIT_FAILURE);
 	}
 
+	/* socket file descriptor */
 	int listen_fd = 0;
 
 	/* Get  and connect a socket */

@@ -1,10 +1,9 @@
 #include "common.h"
 
-
 /**
- * [get_socket description]
+ * Get a socket descriptor
  * @method get_socket
- * @return [description]
+ * @return file discriptors
  */
 int get_socket() {
 
@@ -71,7 +70,7 @@ void reset_timer(struct timeval *tv) {
 	new.tv_usec = UTIMEOUT;
 
 	*tv = new;
-} /* reset_timer */
+}
 
 /* Root is required to capture device input */
 bool rootCheck() {
@@ -122,10 +121,10 @@ int send_stop(int sockfd) {
 
 	ret = send(sockfd, STOP, sizeof(STOP), 0);
 
-#ifdef HAVE_WIRINGPI
-  // switch gpio pin to disable relay
-  digitalWrite(LED, OFF);
-#endif
+	#ifdef HAVE_WIRINGPI
+	// switch gpio pin to disable relay
+	digitalWrite(LED, OFF);
+	#endif
 
 	if (ret < 0) {
 
@@ -138,7 +137,7 @@ int send_stop(int sockfd) {
 	}
 
 	return (ret);
-} /* stop_video */
+}
 
 /**
  * Send the start signal to the server
@@ -155,10 +154,10 @@ int send_start(int sockfd) {
 
 	ret = send(sockfd, PLAY, sizeof(PLAY), 0);
 
-#ifdef HAVE_WIRINGPI
-  // switch gpio pin to enable relay
-  digitalWrite(LED, ON);
-#endif
+	#ifdef HAVE_WIRINGPI
+	// switch gpio pin to enable relay
+	digitalWrite(LED, ON);
+	#endif
 
 	if (ret < 0) {
 
@@ -171,7 +170,7 @@ int send_start(int sockfd) {
 	}
 
 	return (ret);
-} /* start_video */
+}
 
 /**
  * Opens the keyboard device file
