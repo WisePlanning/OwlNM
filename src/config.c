@@ -5,6 +5,7 @@
  * @method print_usage
  */
 void print_usage() {
+  printf("Version %d.%d", MAJOR_VERSION, MINOR_VERSION);
   printf("-v : Verbose\n");
   printf("-s : Server mode\n");
   printf("-m : Control mode\n");

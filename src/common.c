@@ -121,8 +121,10 @@ int send_stop(int sockfd) {
 
 	ret = send(sockfd, STOP, sizeof(STOP), 0);
 
+#ifdef HAVE_WIRINGPI
   // switch gpio pin to disable relay
   digitalWrite(LED, OFF);
+#endif
 
 	if (ret < 0) {
 
@@ -151,8 +153,11 @@ int send_start(int sockfd) {
 		puts("Sending start to server\n");
 
 	ret = send(sockfd, PLAY, sizeof(PLAY), 0);
+
+#ifdef HAVE_WIRINGPI
   // switch gpio pin to enable relay
   digitalWrite(LED, ON);
+#endif
 
 	if (ret < 0) {
 

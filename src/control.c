@@ -111,6 +111,7 @@ int control_run_loop() {
 		exit(EXIT_FAILURE);
 	}
 
+#ifdef HAVE_WIRINGPI
 	if (wiringPiSetupGpio () == -1)
 		exit(EXIT_FAILURE);
 
@@ -119,6 +120,7 @@ int control_run_loop() {
 
 	// switch gpio pin to disable relay
 	digitalWrite(LED, OFF);
+#endif
 
 	// use avahi to find the server
 	// if there is no server address,

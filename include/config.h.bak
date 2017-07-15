@@ -17,21 +17,26 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/queue.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
-#include <sys/time.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+
+/* Required by event.h. */
+#include <sys/queue.h>
+#include <sys/time.h>
 #include <syslog.h>
 #include <unistd.h>
 
 /* Input events */
 #ifdef __FreeBSD__
-#include </usr/include/dev/evdev/input.h>
+#include "/usr/src/sys/dev/evdev/input.h"
+#elif __APPLE__
+#define KEY_LEFTSHIFT 0x38
+#define KEY_RIGHTSHIFT 0x3c
 #else
 #include <linux/input.h>
-#endif
+#endif /* __FreeBSD__ */
 
 /* Libevent. */
 #include <event2/buffer.h>
@@ -52,10 +57,11 @@
 
 #include "service_client.h"
 #include "service_server.h"
-
 #endif
 
+#ifdef HAVE_WRIRINGPI
 #include <wiringPi.h>
+#endif
 
 #include "client.h"
 #include "common.h"
@@ -63,29 +69,36 @@
 #include "key_util.h"
 #include "server.h"
 #include "video.h"
+
 /**
  * Constants / Defaults
  */
 #define BUF_SIZE 1024
+
 #define PLAY "play"
 #define STOP "stop"
 #define ENTER "H"
 #define LEAVE "L"
 #define KEY_RELEASE 0
 #define KEY_PRESS 1
-#define TRUE 1
-#define FALSE 0
-#define VERSION "0.7"
-#define MAX_TRIES 20
+
+#define MAJOR_VERSION @OwlNM_VERSION_MAJOR@
+#define MINOR_VERSION @OwlNM_VERSION_MINOR@
+
 #define DEFAULT_TIMEOUT 120
 #define UTIMEOUT 0
+
 #define DEFAULT_PORT "4000"
-#define SERVICE_NAME "_owlmedia._tcp"
-#define DEFAULT_CONFIG_FILE "/usr/local/etc/OwlMedia.conf"
+#define SERVICE_NAME "_OwlNM._tcp"
+#define DEFAULT_CONFIG_FILE "/usr/local/etc/OwlNM.conf"
 #define DEFAULT_VIDEO "/home/wise/Movies/main.h264"
-#define DEFAULT_LOG_FILE "/var/log/OwlMedia.log"
+#define DEFAULT_LOG_FILE "/var/log/OwlNM.log"
 #define DEFAULT_SERVER "192.168.0.101"
 #define DEFAULT_PLAYER "hello_video.bin"
+
+#define LED 21
+#define OFF 0
+#define ON 1
 
 #define FOREACH_MODE(MODE)                                                     \
   MODE(ERROR)                                                                  \
@@ -117,7 +130,7 @@ typedef struct config_obj {
   char *video_player;
 } Config;
 
-/* global config struct */
+/* Global config struct */
 Config *conf;
 
 /* Read in the config file */

@@ -23,20 +23,18 @@
 #include <sys/wait.h>
 
 /* Input events */
-/* #undef HAVE_BSD_INPUT */
+#cmakedefine HAVE_BSD_INPUT
 #ifdef HAVE_BSD_INPUT
 #include "/usr/src/sys/dev/evdev/input.h"
 #endif
-/* #undef HAVE_LINUX_INPUT */
+#cmakedefine HAVE_LINUX_INPUT
 #ifdef HAVE_LINUX_INPUT
 #include <linux/input.h>
 #endif
-/* #undef HAVE_INPUT */
+#cmakedefine HAVE_INPUT
 #ifdef HAVE_INPUT
 #include <input.h>
 #endif
-
-
 
 #ifdef __APPLE__
 #define KEY_LEFTSHIFT 0x38
@@ -44,7 +42,7 @@
 #endif
 
 /* Libevent. */
-#define HAVE_LIBEVENT
+#cmakedefine HAVE_LIBEVENT
 #ifdef HAVE_LIBEVENT
 /* Required by event.h. */
 
@@ -58,9 +56,11 @@
 #include <event2/event.h>
 #include <event2/event_struct.h>
 #endif
+/* Libevent. */
 
-/* #undef HAVE_AVAHI */
-#ifndef HAVE_AVAHI
+/* Libavahi. */
+#cmakedefine HAVE_AVAHI
+#ifdef HAVE_AVAHI
 #include <avahi-client/client.h>
 #include <avahi-client/lookup.h>
 #include <avahi-client/publish.h>
@@ -74,8 +74,10 @@
 #include "service_client.h"
 #include "service_server.h"
 #endif
+/* Libavahi. */
 
-/* #undef HAVE_WRIRINGPI */
+/* wiringPi. */
+#cmakedefine HAVE_WRIRINGPI 1
 #ifdef HAVE_WRIRINGPI // The RPi library
 
 #include <wiringPi.h>
@@ -87,6 +89,7 @@
 #define TRUE 1
 #define FALSE 0
 #endif
+/* wiringPi. */
 
 // OwlNM sources
 #include "client.h"
@@ -108,8 +111,8 @@
 #define KEY_RELEASE 0
 #define KEY_PRESS 1
 
-#define MAJOR_VERSION 0
-#define MINOR_VERSION 8
+#define MAJOR_VERSION @OwlNM_VERSION_MAJOR@
+#define MINOR_VERSION @OwlNM_VERSION_MINOR@
 
 #define DEFAULT_TIMEOUT 120
 #define UTIMEOUT 0

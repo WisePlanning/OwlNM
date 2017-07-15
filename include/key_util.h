@@ -10,7 +10,6 @@
 /* check if event is shift key */
 bool isShift(uint16_t code);
 
-
 char *getKeyText(uint16_t code, uint8_t shift_pressed);
 
 #endif
