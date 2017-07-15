@@ -53,8 +53,9 @@ Config *clear_config(Config *in) {
   in = malloc(sizeof(Config));
 	in->server_address = NULL;
 	in->verbose = 0;
+  in->playing = FALSE;
   in->mode = 0;
-	in->port = NULL;
+  in->port = NULL;
   in->timeout = 0;
 	in->video_file = NULL;
 	in->video_player = NULL;

@@ -122,6 +122,7 @@ int control_run_loop() {
 	digitalWrite(LED, OFF);
 #endif
 
+#ifdef HAVE_AVAHI
 	// use avahi to find the server
 	// if there is no server address,
 	if (conf->avahi || NULL == conf->server_address) {
@@ -129,6 +130,12 @@ int control_run_loop() {
 			avahi_client();
 		} while (NULL == conf->server_address);
 	}
+#endif
+
+  if (NULL == conf->server_address) {
+    puts("No server address");
+    exit(1);
+  }
 
 	do {
 		listen_fd = get_socket();
@@ -212,8 +219,10 @@ int control_run_loop() {
 						/* reconnect */
 						shutdown(listen_fd, 2);
 
+					#ifdef HAVE_AVAHI
 						if (conf->avahi)
 							avahi_client();
+					#endif
 
 						listen_fd = get_socket();
 						sleep(5);
@@ -231,7 +240,6 @@ int control_run_loop() {
 
 			/* loop through the sensor devices */
 			for (int i = 0; i < 2; ++i) {
-
 				if (FD_ISSET(fds[i], &read_set)) {
 					if ((ret = read(fds[i], &event, sizeof(input_event))) > 0) {
 						if (event.type == EV_KEY) {

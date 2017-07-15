@@ -21,7 +21,10 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-
+#include <sys/queue.h>
+#include <sys/time.h>
+#include <syslog.h>
+#include <unistd.h>
 /* Input events */
 #cmakedefine HAVE_BSD_INPUT
 #ifdef HAVE_BSD_INPUT
@@ -46,10 +49,7 @@
 #ifdef HAVE_LIBEVENT
 /* Required by event.h. */
 
-#include <sys/queue.h>
-#include <sys/time.h>
-#include <syslog.h>
-#include <unistd.h>
+
 
 #include <event2/buffer.h>
 #include <event2/bufferevent.h>
@@ -145,6 +145,7 @@ typedef struct config_obj {
   int timeout;
   int avahi;
   int verbose;
+  int playing;
   FILE *log_fd;
   MODE mode;
   char *config_file;

@@ -39,6 +39,7 @@ int get_socket() {
 		}
 		break; // if we get here, we must have connected successfully
 	}
+
 	freeaddrinfo(res); // free the linked list
 
 	return (sockfd > 0 ? sockfd : -1);

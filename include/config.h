@@ -142,6 +142,7 @@ typedef struct config_obj {
   int timeout;
   int avahi;
   int verbose;
+  int playing;
   FILE *log_fd;
   MODE mode;
   char *config_file;

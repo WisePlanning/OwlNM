@@ -41,13 +41,13 @@
  */
 void sigchld_handler(int s) {
 
-  // waitpid() might overwrite errno, so we save and restore it:
-  int saved_errno = errno;
+	// waitpid() might overwrite errno, so we save and restore it:
+	int saved_errno = errno;
 
-  while (waitpid(-1, NULL, WNOHANG) > 0)
-    ;
+	while (waitpid(-1, NULL, WNOHANG) > 0)
+		;
 
-  errno = saved_errno;
+	errno = saved_errno;
 }
 
 int clients_connected = 0;
@@ -64,18 +64,18 @@ static struct event_base *evbase;
  * member of a tailq - the linked list of all connected clients.
  */
 struct client {
-  /* The clients socket. */
-  int fd;
+	/* The clients socket. */
+	int fd;
 
-  /* The bufferedevent for this client. */
-  struct bufferevent *buf_ev;
+	/* The bufferedevent for this client. */
+	struct bufferevent *buf_ev;
 
-  /*
-   * This holds the pointers to the next and previous entries in
-   * the tail queue.
-   */
-  TAILQ_ENTRY(client)
-  entries;
+	/*
+	 * This holds the pointers to the next and previous entries in
+	 * the tail queue.
+	 */
+	TAILQ_ENTRY(client)
+	entries;
 };
 
 /**
@@ -92,16 +92,16 @@ client_tailq_head;
  * @return             [description]
  */
 int setnonblock(int fd) {
-  int flags;
+	int flags;
 
-  flags = fcntl(fd, F_GETFL);
-  if (flags < 0)
-    return flags;
-  flags |= O_NONBLOCK;
-  if (fcntl(fd, F_SETFL, flags) < 0)
-    return -1;
+	flags = fcntl(fd, F_GETFL);
+	if (flags < 0)
+		return flags;
+	flags |= O_NONBLOCK;
+	if (fcntl(fd, F_SETFL, flags) < 0)
+		return -1;
 
-  return 0;
+	return 0;
 }
 
 /**
@@ -111,27 +111,27 @@ int setnonblock(int fd) {
  * @param  arg              [description]
  */
 void buffered_on_read(struct bufferevent *bev, void *arg) {
-  struct client *this_client = arg;
-  struct client *client;
-  uint8_t data[8192];
-  size_t n;
+	struct client *this_client = arg;
+	struct client *client;
+	uint8_t data[8192];
+	size_t n;
 
-  /* Read 8k at a time and send it to all connected clients. */
-  for (;;) {
-    n = bufferevent_read(bev, data, sizeof(data));
-    if (n <= 0) {
-      /* Done. */
-      break;
-    }
+	/* Read 8k at a time and send it to all connected clients. */
+	for (;; ) {
+		n = bufferevent_read(bev, data, sizeof(data));
+		if (n <= 0) {
+			/* Done. */
+			break;
+		}
 
-    /* Send data to all connected clients except for the
-     * client that sent the data. */
-    TAILQ_FOREACH(client, &client_tailq_head, entries) {
-      if (client != this_client) {
-        bufferevent_write(client->buf_ev, data, n);
-      }
-    }
-  }
+		/* Send data to all connected clients except for the
+		 * client that sent the data. */
+		TAILQ_FOREACH(client, &client_tailq_head, entries) {
+			if (client != this_client) {
+				bufferevent_write(client->buf_ev, data, n);
+			}
+		}
+	}
 }
 
 /**
@@ -144,22 +144,22 @@ void buffered_on_read(struct bufferevent *bev, void *arg) {
  * @param  arg               [description]
  */
 void buffered_on_error(struct bufferevent *bev, short what, void *arg) {
-  struct client *client = (struct client *)arg;
+	struct client *client = (struct client *)arg;
 
-  if (what & BEV_EVENT_EOF) {
-    /* Client disconnected, remove the read event and the
-     * free the client structure. */
-    printf("Client disconnected.\n");
-  } else {
-    warn("Client socket error, disconnecting.\n");
-  }
+	if (what & BEV_EVENT_EOF) {
+		/* Client disconnected, remove the read event and the
+		 * free the client structure. */
+		printf("Client disconnected.\n");
+	} else {
+		warn("Client socket error, disconnecting.\n");
+	}
 
-  /* Remove the client from the tailq. */
-  TAILQ_REMOVE(&client_tailq_head, client, entries);
-  clients_connected--;
-  bufferevent_free(client->buf_ev);
-  close(client->fd);
-  free(client);
+	/* Remove the client from the tailq. */
+	TAILQ_REMOVE(&client_tailq_head, client, entries);
+	clients_connected--;
+	bufferevent_free(client->buf_ev);
+	close(client->fd);
+	free(client);
 }
 
 /**
@@ -171,54 +171,52 @@ void buffered_on_error(struct bufferevent *bev, short what, void *arg) {
  * @param  arg       [description]
  */
 void on_accept(int fd, short ev, void *arg) {
-  int client_fd;
-  struct sockaddr_in client_addr;
-  socklen_t client_len = sizeof(client_addr);
-  struct client *client;
-  char s[INET6_ADDRSTRLEN];
+	int client_fd;
+	struct sockaddr_in client_addr;
+	socklen_t client_len = sizeof(client_addr);
+	struct client *client;
+	char s[INET6_ADDRSTRLEN];
 
-  client_fd = accept(fd, (struct sockaddr *)&client_addr, &client_len);
-  if (client_fd < 0) {
-    warn("accept failed");
-    return;
-  }
+	client_fd = accept(fd, (struct sockaddr *)&client_addr, &client_len);
+	if (client_fd < 0) {
+		warn("accept failed");
+		return;
+	}
 
-  /* Set the client socket to non-blocking mode. */
-  if (setnonblock(client_fd) < 0)
-    warn("failed to set client socket non-blocking");
+	/* Set the client socket to non-blocking mode. */
+	if (setnonblock(client_fd) < 0)
+		warn("failed to set client socket non-blocking");
 
-  /* We've accepted a new client, create a client object. */
-  client = calloc(1, sizeof(*client));
-  if (client == NULL)
-    err(1, "malloc failed");
-  client->fd = client_fd;
+	/* We've accepted a new client, create a client object. */
+	client = calloc(1, sizeof(*client));
+	if (client == NULL)
+		err(1, "malloc failed");
+	client->fd = client_fd;
 
-  client->buf_ev = bufferevent_socket_new(evbase, client_fd, 0);
-  bufferevent_setcb(client->buf_ev, buffered_on_read, NULL, buffered_on_error,
-                    client);
+	client->buf_ev = bufferevent_socket_new(evbase, client_fd, 0);
+	bufferevent_setcb(client->buf_ev, buffered_on_read, NULL, buffered_on_error,
+	                  client);
 
-  /* We have to enable it before our callbacks will be
-   * called. */
-  bufferevent_enable(client->buf_ev, EV_READ);
+	/* We have to enable it before our callbacks will be
+	 * called. */
+	bufferevent_enable(client->buf_ev, EV_READ);
 
-  /* Add the new client to the tailq. */
-  TAILQ_INSERT_TAIL(&client_tailq_head, client, entries);
-  clients_connected++;
+	/* Add the new client to the tailq. */
+	TAILQ_INSERT_TAIL(&client_tailq_head, client, entries);
+	clients_connected++;
 
-  printf("Accepted connection from %s: %d clients connected.\n",
-         inet_ntop(client_addr.sin_family,
-                   get_in_addr((struct sockaddr *)&client_addr), s, sizeof(s)),
-         clients_connected);
+	if (conf->verbose)
+		printf("Accepted connection from %s: %d clients connected.\n",inet_ntop(client_addr.sin_family,get_in_addr((struct sockaddr *)&client_addr), s, sizeof(s)), clients_connected);
 }
 
 /**
-*
-*/
+ *
+ */
 void *get_in_addr(struct sockaddr *sa) {
-  if (sa->sa_family == AF_INET) {
-    return &(((struct sockaddr_in *)sa)->sin_addr);
-  }
-  return &(((struct sockaddr_in6 *)sa)->sin6_addr);
+	if (sa->sa_family == AF_INET) {
+		return &(((struct sockaddr_in *)sa)->sin_addr);
+	}
+	return &(((struct sockaddr_in6 *)sa)->sin6_addr);
 }
 
 /**
@@ -227,100 +225,108 @@ void *get_in_addr(struct sockaddr *sa) {
  * @return [description]
  */
 int server_run_loop() {
-  if (conf->verbose)
-    puts("Starting Server");
+	if (conf->verbose)
+		puts("Starting Server");
 
-  struct addrinfo hints, *servinfo, *p;
-  struct sigaction sa;
-  int yes = 1;
-  int rv;
-  int listen_fd;
-  struct event ev_accept;
-  pid_t pid = 0;
+	struct addrinfo hints, *servinfo, *p;
+	struct sigaction sa;
+	int yes = 1;
+	int rv;
+	int listen_fd;
+	struct event ev_accept;
 
-  memset(&hints, 0, sizeof(hints));
-  hints.ai_family = AF_INET;
 
-  /* Input events */
-// #ifdef __FreeBSD__
-  hints.ai_family = AF_INET;
-// #else
-//   hints.ai_family = AF_UNSPEC;
-// #endif /* __FreeBSD__ */
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_INET;
 
-  hints.ai_socktype = SOCK_STREAM;
-  hints.ai_flags = AI_PASSIVE; // use my IP
+	/* Input events */
+	// #ifdef __FreeBSD__
+	// hints.ai_family = AF_INET;
+	// #else
+	hints.ai_family = AF_UNSPEC;
+	// #endif /* __FreeBSD__ */
 
-  if ((rv = getaddrinfo(NULL, conf->port, &hints, &servinfo)) != 0) {
-    fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
-    return 1;
-  }
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_flags = AI_PASSIVE; // use my IP
 
-  // loop through all the results and bind to the first we can
-  for (p = servinfo; p != NULL; p = p->ai_next) {
-    if ((listen_fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) ==
-        -1) {
-      perror("server: socket");
-      continue;
-    }
+	if ((rv = getaddrinfo(NULL, conf->port, &hints, &servinfo)) != 0) {
+		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
+		return 1;
+	}
 
-    if (setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) ==
-        -1) {
-      perror("setsockopt");
-      exit(1);
-    }
+	// loop through all the results and bind to the first we can
+	for (p = servinfo; p != NULL; p = p->ai_next) {
+		if ((listen_fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) ==
+		    -1) {
+			perror("server: socket");
+			continue;
+		}
 
-    if (bind(listen_fd, p->ai_addr, p->ai_addrlen) == -1) {
-      close(listen_fd);
-      perror("server: bind");
-      continue;
-    }
+		if (setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) ==
+		    -1) {
+			perror("setsockopt");
+			exit(1);
+		}
 
-    break;
-  }
+		if (bind(listen_fd, p->ai_addr, p->ai_addrlen) == -1) {
+			close(listen_fd);
+			perror("server: bind");
+			continue;
+		}
 
-  freeaddrinfo(servinfo); // all done with this structure
+		break;
+	}
 
-  if (p == NULL) {
-    perror( "server: failed to bind\n");
-    exit(1);
-  }
+	freeaddrinfo(servinfo); // all done with this structure
 
-  if (listen(listen_fd, BACKLOG) == -1) {
-    perror("listen");
-    exit(1);
-  }
+	if (p == NULL) {
+		perror("server: failed to bind\n");
+		exit(1);
+	}
 
-  sa.sa_handler = sigchld_handler; // reap all dead processes
-  sigemptyset(&sa.sa_mask);
-  sa.sa_flags = SA_RESTART;
-  if (sigaction(SIGCHLD, &sa, NULL) == -1) {
-    perror("sigaction");
-    exit(1);
-  }
+	if (listen(listen_fd, BACKLOG) == -1) {
+		perror("listen");
+		exit(1);
+	}
 
-  printf("server: waiting for connections...\n");
+	sa.sa_handler = sigchld_handler; // reap all dead processes
+	sigemptyset(&sa.sa_mask);
+	sa.sa_flags = SA_RESTART;
 
-  /* Initialize libevent. */
-  evbase = event_base_new();
+	if (sigaction(SIGCHLD, &sa, NULL) == -1) {
+		perror("sigaction");
+		exit(1);
+	}
 
-  /* Initialize the tailq. */
-  TAILQ_INIT(&client_tailq_head);
+	if (conf->verbose)
+		printf("server: waiting for connections...\n");
 
-  // Fork off the avahi service advertiser
-  pid = fork();
-  if (pid == 0) {
-    avahi_server();
-    return 0;
-  }
-  /* We now have a listening socket, we create a read event to
-   * be notified when a client connects. */
-  event_assign(&ev_accept, evbase, listen_fd, EV_READ | EV_PERSIST, on_accept,
-               NULL);
-  event_add(&ev_accept, NULL);
+	/* Initialize libevent. */
+	evbase = event_base_new();
 
-  /* Start the event loop. */
-  event_base_dispatch(evbase);
+	/* Initialize the tailq. */
+	TAILQ_INIT(&client_tailq_head);
 
-  return 0;
+#ifdef HAVE_AVAHI
+	pid_t pid = 0;
+	// Fork off the avahi service advertiser
+	if (conf->avahi) {
+		pid = fork();
+		if (pid == 0) {
+			avahi_server();
+			return 0;
+		}
+	}
+#endif
+
+	/* We now have a listening socket, we create a read event to
+	 * be notified when a client connects. */
+	event_assign(&ev_accept, evbase, listen_fd, EV_READ | EV_PERSIST, on_accept,
+	             NULL);
+	event_add(&ev_accept, NULL);
+
+	/* Start the event loop. */
+	event_base_dispatch(evbase);
+
+	return 0;
 }

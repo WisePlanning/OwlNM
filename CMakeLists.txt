@@ -24,19 +24,24 @@ SET (CMAKE_CXX_FLAGS_MINSIZEREL     "-Os -DNDEBUG")
 SET (CMAKE_CXX_FLAGS_RELEASE        "-O4 -DNDEBUG")
 SET (CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g")
 
+INCLUDE_DIRECTORIES(include)
+INCLUDE_DIRECTORIES(/usr/include)
+INCLUDE_DIRECTORIES(/usr/local/include)
+
 INCLUDE (CheckIncludeFiles)
+
 CHECK_INCLUDE_FILES(wiringPi.h HAVE_WIRINGPI)
 CHECK_INCLUDE_FILES("avahi-client/client.h;avahi-common/error.h" HAVE_AVAHI)
+
+find_library(EVENT_LIBRARY
+  NAMES event event2
+  PATHS /usr/lib /usr/local/lib
+)
+
 CHECK_INCLUDE_FILES(event2/event.h HAVE_LIBEVENT)
 CHECK_INCLUDE_FILES(/usr/src/sys/dev/evdev/input.h HAVE_BSD_INPUT)
 CHECK_INCLUDE_FILES(linux/input.h HAVE_LINUX_INPUT)
 CHECK_INCLUDE_FILES(input.h HAVE_INPUT)
-
-
-
-INCLUDE_DIRECTORIES(include)
-INCLUDE_DIRECTORIES(/usr/include)
-INCLUDE_DIRECTORIES(/usr/local/include)
 
 LINK_DIRECTORIES(/usr/local/lib)
 
@@ -48,8 +53,8 @@ FILE(GLOB SOURCES "src/*.c")
 
 ADD_EXECUTABLE(OwlNM ${SOURCES})
 
-if()
-TARGET_LINK_LIBRARIES(OwlNM  wiringPi event avahi-common avahi-client)
+if(HAVE_WIRINGPI)
+TARGET_LINK_LIBRARIES(OwlNM wiringPi event avahi-common avahi-client)
 ELSE()
 TARGET_LINK_LIBRARIES(OwlNM  event avahi-common avahi-client)
 endif()
