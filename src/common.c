@@ -64,12 +64,13 @@ void set_nonblocking(int socket) {
  * @param  tv          [description]
  */
 void reset_timer(struct timeval *tv) {
-	struct timeval new;
 
-	new.tv_sec = conf->timeout;
-	new.tv_usec = UTIMEOUT;
+	if (conf->verbose)
+		puts("resetting timer");
 
-	*tv = new;
+	tv->tv_sec = conf->timeout;
+	tv->tv_usec = UTIMEOUT;
+
 }
 
 /* Root is required to capture device input */
@@ -124,6 +125,9 @@ int send_stop(int sockfd) {
 	#ifdef HAVE_WIRINGPI
 	// switch gpio pin to disable relay
 	digitalWrite(LED, OFF);
+
+	if (conf->verbose)
+		printf("LED OFF\n");
 	#endif
 
 	if (ret < 0) {
@@ -157,6 +161,10 @@ int send_start(int sockfd) {
 	#ifdef HAVE_WIRINGPI
 	// switch gpio pin to enable relay
 	digitalWrite(LED, ON);
+
+	if (conf->verbose)
+		printf("LED ON\n");
+
 	#endif
 
 	if (ret < 0) {

@@ -77,8 +77,8 @@
 /* Libavahi. */
 
 /* wiringPi. */
-#cmakedefine HAVE_WRIRINGPI 1
-#ifdef HAVE_WRIRINGPI // The RPi library
+#cmakedefine HAVE_WIRINGPI
+#ifdef HAVE_WIRINGPI // The RPi library
 
 #include <wiringPi.h>
 #define LED 21 // RPI3 PIN
