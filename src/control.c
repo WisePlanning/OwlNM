@@ -12,7 +12,8 @@ char *getSensorDeviceFileName(int position) {
 
 	/* get the devicenames of sensors */
 	static const char *command = "grep -E 'Handlers|EV' /proc/bus/input/devices |"
-	                             "grep -B1 120013 |"
+	                            //  "grep -B1 120013 |"  // Keyboard identifier
+	                             "grep -B1 100013 |"  // Sensor identifier
 	                             "grep -Eo event[0-9]+ |"
 	                             "tr -d '\\n'";
 

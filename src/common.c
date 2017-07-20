@@ -75,7 +75,12 @@ void reset_timer(struct timeval *tv) {
 
 /* Root is required to capture device input */
 bool rootCheck() {
-	if (geteuid() != 0) {
+
+	if (conf->verbose)
+		printf("Checking for root permissions\n");
+
+	if (geteuid() != 0)
+	{
 		return FALSE;
 	}
 	return TRUE;
@@ -124,10 +129,11 @@ int send_stop(int sockfd) {
 
 	#ifdef HAVE_WIRINGPI
 	// switch gpio pin to disable relay
-	digitalWrite(LED, OFF);
-
 	if (conf->verbose)
 		printf("LED OFF\n");
+
+	digitalWrite(LED, OFF);
+
 	#endif
 
 	if (ret < 0) {

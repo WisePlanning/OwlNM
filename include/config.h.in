@@ -25,6 +25,7 @@
 #include <sys/time.h>
 #include <syslog.h>
 #include <unistd.h>
+
 /* Input events */
 #cmakedefine HAVE_BSD_INPUT
 #ifdef HAVE_BSD_INPUT
@@ -48,8 +49,6 @@
 #cmakedefine HAVE_LIBEVENT
 #ifdef HAVE_LIBEVENT
 /* Required by event.h. */
-
-
 
 #include <event2/buffer.h>
 #include <event2/bufferevent.h>
