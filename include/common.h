@@ -3,10 +3,6 @@
 
 #include "config.h"
 
-// void set_addr(struct sockaddr_in6 *addr);
-
-// bool socket_connect(struct sockaddr_in6 addr, int sockfd);
-
 /* set socket to non-blocking */
 extern void set_nonblocking(int socket);
 

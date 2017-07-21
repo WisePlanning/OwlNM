@@ -103,14 +103,14 @@ int control_run_loop() {
 	int sensor_device_1 = openDeviceFile(getSensorDeviceFileName(1));
 
 	// /* Get the keyboard file descriptos */
-	// if (conf->verbose)
-	// 	puts("Getting sensor 1");
-	// int sensor_device_2 = openDeviceFile(getSensorDeviceFileName(2));
+	if (conf->verbose)
+		puts("Getting sensor 2");
+	int sensor_device_2 = openDeviceFile(getSensorDeviceFileName(2));
 
-	// if (!(sensor_device_1 > 0) || !(sensor_device_2 > 0)) {
-	// 	perror("Could not get sensors");
-	// 	exit(EXIT_FAILURE);
-	// }
+	if (!(sensor_device_1 > 0) || !(sensor_device_2 > 0)) {
+		perror("Could not get sensors");
+		exit(EXIT_FAILURE);
+	}
 
 #ifdef HAVE_WIRINGPI
 	if (wiringPiSetupGpio () == -1)
@@ -118,7 +118,7 @@ int control_run_loop() {
 
 	//set the pin to output
 	pinMode (LED, OUTPUT);
-	puts("LED OFF");
+	printf("LED OFF\n");
 	// switch gpio pin to disable relay
 	digitalWrite(LED, OFF);
 #endif
@@ -134,7 +134,7 @@ int control_run_loop() {
 #endif
 
   if (NULL == conf->server_address) {
-    puts("No server address");
+	    printf("No server address\n");
     exit(1);
   }
 
@@ -147,7 +147,7 @@ int control_run_loop() {
 	/* Setup the select device file array */
 	FD_ZERO(&master);
 	FD_SET(sensor_device_1, &master); // second sensor
-	// FD_SET(sensor_device_2, &master); // first sensor
+	FD_SET(sensor_device_2, &master); // first sensor
 	FD_SET(listen_fd, &master);     // connection to server
 
 	/* copy of the file descriptors for the sensors */
@@ -155,7 +155,7 @@ int control_run_loop() {
 	memset(&fds, 0, 2);
 
 	fds[0] = sensor_device_1;
-	// fds[1] = sensor_device_2;
+	fds[1] = sensor_device_2;
 
 	/* Wait for timeout or person to leave */
 	while (TRUE) {
@@ -170,19 +170,19 @@ int control_run_loop() {
 			perror("Error reading data!\n");
 
 			FD_CLR(sensor_device_1, &master); // second sensor
-			// FD_CLR(sensor_device_2, &master); // first sensor
+			FD_CLR(sensor_device_2, &master); // first sensor
 
 			/* Close the sensor device file descriptors */
 			shutdown(sensor_device_1, 2);
-			// shutdown(sensor_device_2, 2);
+			shutdown(sensor_device_2, 2);
 
 			/* Get the file descriptors */
 			int sensor_device_1 = openDeviceFile(getSensorDeviceFileName(1));
-			// int sensor_device_2 = openDeviceFile(getSensorDeviceFileName(2));
+			int sensor_device_2 = openDeviceFile(getSensorDeviceFileName(2));
 
 			FD_SET(sensor_device_1, &master); // second sensor
-			// FD_SET(sensor_device_2, &master); // first sensor
-			sensor_device_1 = listen_fd + 1;
+			FD_SET(sensor_device_2, &master); // first sensor
+			sensor_device_2 = listen_fd + 1;
 
 		} else if (ret == 0) {
 			/* Nothing happened */
@@ -232,7 +232,7 @@ int control_run_loop() {
 
 					FD_ZERO(&master);
 					FD_SET(sensor_device_1, &master);
-					// FD_SET(sensor_device_2, &master);
+					FD_SET(sensor_device_2, &master);
 					FD_SET(listen_fd, &master);
 
 					reset_timer(&tv);
@@ -240,7 +240,7 @@ int control_run_loop() {
 			}
 
 			/* loop through the sensor devices */
-			for (int i = 0; i < 1; ++i) {
+			for (int i = 0; i < 2; ++i) {
 				if (FD_ISSET(fds[i], &read_set)) {
 					if ((ret = read(fds[i], &event, sizeof(input_event))) > 0) {
 						if (event.type == EV_KEY) {
