@@ -56,7 +56,7 @@ ADD_EXECUTABLE(OwlNM ${SOURCES})
 if(HAVE_WIRINGPI)
 TARGET_LINK_LIBRARIES(OwlNM wiringPi event avahi-common avahi-client)
 ELSE()
-TARGET_LINK_LIBRARIES(OwlNM  event avahi-common avahi-client)
+TARGET_LINK_LIBRARIES(OwlNM event avahi-common avahi-client)
 endif()
 
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/include/config.h.in ${CMAKE_CURRENT_SOURCE_DIR}/include/config.h)

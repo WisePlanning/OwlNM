@@ -165,16 +165,16 @@ int send_start(int sockfd) {
 	ret = send(sockfd, PLAY, sizeof(PLAY), 0);
 
 	#ifdef HAVE_WIRINGPI
+
 	// switch gpio pin to enable relay
 	digitalWrite(LED, ON);
 
 	if (conf->verbose)
 		printf("LED ON\n");
 
-	#endif
+	#endif /* HAVE_WIRINGPI */
 
 	if (ret < 0) {
-
 		printf("Error sending data!\n\t-%s", PLAY);
 
 	} else {

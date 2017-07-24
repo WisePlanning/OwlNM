@@ -33,8 +33,6 @@ int main(int argc, char *argv[]) {
   /* Show the config in use */
   if (conf->verbose)
     display_config(conf);
-    /* pid of the fork */
-    pid_t controller;
 
   /* Choose the run loop for the mode selected */
   switch (conf->mode) {
@@ -42,29 +40,8 @@ int main(int argc, char *argv[]) {
   /* server mode */
   case SERVER:
 
-    /* fork the program */
-    controller = fork();
-
-    if (controller == 0) {
-
-      /* Check for root permissions before starting the controller */
-      if (rootCheck()) {
-
-        /* start the controller run loop in the controller fork */
-        control_run_loop();
-      } else {
-
-        if (conf->verbose) {
-          puts("\nNot root, unable to run as controller");
-        }
-        /* Shut down unused fork */
-        exit(EXIT_SUCCESS);
-      }
-    } else {
-
-      /* Start server loop */
+    /* Start server loop */
       server_run_loop();
-    }
     break;
 
   case CONTROL:
@@ -74,7 +51,10 @@ int main(int argc, char *argv[]) {
       /* start the control loop */
       control_run_loop();
     } else {
+
       puts("Controller must be run as Root\n");
+      free(conf);
+      exit(EXIT_FAILURE);
     }
     break;
 

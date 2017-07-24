@@ -60,6 +60,7 @@ Config *clear_config(Config *in) {
 	in->video_file = NULL;
 	in->video_player = NULL;
 	in->config_file = NULL;
+  in->log_open = false;
 	in->log_name = NULL;
 	in->avahi = 0;
   return in;

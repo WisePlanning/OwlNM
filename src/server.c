@@ -256,14 +256,12 @@ int server_run_loop() {
 
 	// loop through all the results and bind to the first we can
 	for (p = servinfo; p != NULL; p = p->ai_next) {
-		if ((listen_fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) ==
-		    -1) {
+		if ((listen_fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
 			perror("server: socket");
 			continue;
 		}
 
-		if (setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) ==
-		    -1) {
+		if (setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
 			perror("setsockopt");
 			exit(1);
 		}
@@ -309,6 +307,7 @@ int server_run_loop() {
 
 #ifdef HAVE_AVAHI
 	pid_t pid = 0;
+
 	// Fork off the avahi service advertiser
 	if (conf->avahi) {
 		pid = fork();
@@ -321,8 +320,7 @@ int server_run_loop() {
 
 	/* We now have a listening socket, we create a read event to
 	 * be notified when a client connects. */
-	event_assign(&ev_accept, evbase, listen_fd, EV_READ | EV_PERSIST, on_accept,
-	             NULL);
+	event_assign(&ev_accept, evbase, listen_fd, EV_READ | EV_PERSIST, on_accept, NULL);
 	event_add(&ev_accept, NULL);
 
 	/* Start the event loop. */

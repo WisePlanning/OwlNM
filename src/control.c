@@ -80,7 +80,12 @@ char *getSensorDeviceFileName(int position) {
 int control_run_loop() {
 
 	if (conf->verbose)
-		puts("Starting Controller");
+		printf("Starting Controller\n");
+
+	conf->log_fd = fopen(conf->log_name);
+	if (conf->log_fd) {
+		fprintf(conf->log_fd,"Starting Controller\n");
+	}
 
 	struct timeval tv;
 
@@ -99,12 +104,14 @@ int control_run_loop() {
 
 	/* Get the keyboard file descriptos */
 	if (conf->verbose)
-		puts("Getting sensor 1");
+		printf("Getting sensor \n");
+
 	int sensor_device_1 = openDeviceFile(getSensorDeviceFileName(1));
 
 	// /* Get the keyboard file descriptos */
 	if (conf->verbose)
-		puts("Getting sensor 2");
+		printf("Getting sensor 2\n");
+
 	int sensor_device_2 = openDeviceFile(getSensorDeviceFileName(2));
 
 	if (!(sensor_device_1 > 0) || !(sensor_device_2 > 0)) {
@@ -118,7 +125,10 @@ int control_run_loop() {
 
 	//set the pin to output
 	pinMode (LED, OUTPUT);
-	printf("LED OFF\n");
+
+	if (conf->verbose)
+		printf("LED OFF\n");
+
 	// switch gpio pin to disable relay
 	digitalWrite(LED, OFF);
 #endif
@@ -215,7 +225,7 @@ int control_run_loop() {
 
 				/* if disconnected, try to reconnect */
 				if (ret == 0) {
-					perror("Connection Lost. Reconnecting.\n");
+					perror("Connection to server Lost. Reconnecting.\n");
 					do {
 						/* reconnect */
 						shutdown(listen_fd, 2);
