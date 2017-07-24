@@ -22,14 +22,24 @@ void read_callback(struct bufferevent *bev, void *ctx) {
 	/* process */
 	if (strncmp(buffer, PLAY, 4) == 0) {
 		/* Start the video player */
-		if (!play_video())
+		if (!play_video()) {
 			perror("Error");
+			logging(__FILE__,__FUNCTION__,__LINE__,"Error: ");
+			if (conf->log_fd){
+				fprintf(conf->log_fd,"%s\n", strerror(errno));
+			}
+		}
 	}
 
 	if ((strncmp(buffer, STOP, 4) == 0)) {
 		/* Kill any running video players */
-		if (!stop_video())
+		if (!stop_video()) {
 			perror("Error");
+			logging(__FILE__,__FUNCTION__,__LINE__,"Error: ");
+			if (conf->log_fd){
+				fprintf(conf->log_fd,"%s\n", strerror(errno));
+			}
+		}
 	}
 }
 
@@ -43,10 +53,15 @@ void read_callback(struct bufferevent *bev, void *ctx) {
 void event_callback(struct bufferevent *bev, short events, void *ctx) {
 	if (events & BEV_EVENT_CONNECTED) {
 		if (conf->verbose)
-			puts("connected");
+			printf("connected\n");
+
+		logging(__FILE__,__FUNCTION__,__LINE__,"connected\n");
+
 	} else if (events & BEV_EVENT_EOF) {
 		if (conf->verbose)
-			puts("Connection closed.");
+			printf("Connection closed.\n");
+
+		logging(__FILE__,__FUNCTION__,__LINE__, "Connection closed.\n");
 
 		sleep(5);
 
@@ -61,6 +76,9 @@ void event_callback(struct bufferevent *bev, short events, void *ctx) {
 	} else if (events & BEV_EVENT_ERROR) {
 		if (conf->verbose)
 			printf("Got an error on the connection: %s\n", strerror(errno));
+
+		logging(__FILE__,__FUNCTION__,__LINE__, "Got an error on the connection :");
+		fprintf(conf->log_fd,"%s\n",strerror(errno));
 
 		sleep(5);
 
@@ -81,12 +99,18 @@ void event_callback(struct bufferevent *bev, short events, void *ctx) {
  */
 int client_run_loop() {
 
-	/* Kill any running video players */
-	if (!stop_video())
-		perror("Error");
-
 	if (conf->verbose)
-		puts("Starting Client - libevent");
+		printf("Starting Client - libevent\n");
+
+	logging(__FILE__,__FUNCTION__,__LINE__, "Starting Client\n");
+	log_config(conf);
+
+	/* Kill any running video players */
+	if (!stop_video()) {
+		perror("Error");
+		logging(__FILE__,__FUNCTION__,__LINE__, "ERROR :");
+		fprintf(conf->log_fd,"%s\n",strerror(errno));
+	}
 
 	struct event_base *base;
 	struct bufferevent *bev = NULL;
@@ -102,8 +126,10 @@ int client_run_loop() {
   #endif
 
 	if (NULL == conf->server_address) {
-		puts("No server address");
-		exit(1);
+		printf("No server address\n");
+		logging(__FILE__,__FUNCTION__,__LINE__, "No server address\n");
+		fclose(conf->log_fd);
+		exit(EXIT_FAILURE);
 	}
 
 	/* libevent base object */
@@ -111,6 +137,8 @@ int client_run_loop() {
 
 	if (!base) {
 		perror("Could not initialize libevent!\n");
+		logging(__FILE__,__FUNCTION__,__LINE__, "Could not initialize libevent!\n");
+		fclose(conf->log_fd);
 		return (EXIT_FAILURE);
 	}
 
@@ -122,9 +150,12 @@ int client_run_loop() {
 		listen_fd = get_socket();
 	} while (listen_fd <= 0);
 
+	logging(__FILE__,__FUNCTION__,__LINE__,"Connected\n");
+
 	/* create the socket */
 	bev = bufferevent_socket_new(base, listen_fd, BEV_OPT_CLOSE_ON_FREE);
-
+	if (!bev)
+		exit(EXIT_FAILURE);
 	/* set the callbacks */
 	bufferevent_setcb(bev, read_callback, NULL, event_callback, base);
 
@@ -141,5 +172,7 @@ int client_run_loop() {
 	event_base_free(base);
 
 	// exit
-	return (EXIT_SUCCESS);
+	fclose(conf->log_fd);
+
+	exit (EXIT_FAILURE);
 }

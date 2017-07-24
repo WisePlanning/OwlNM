@@ -34,6 +34,16 @@ int main(int argc, char *argv[]) {
   if (conf->verbose)
     display_config(conf);
 
+	char *result = malloc(400);
+
+	strcpy(result,conf->log_path);
+	strcat(result, MODE_STRING[conf->mode]);
+	strcat(result, conf->log_name);
+
+	conf->log_fd = fopen(result,"a");
+
+	free(result);
+
   /* Choose the run loop for the mode selected */
   switch (conf->mode) {
 
@@ -53,6 +63,7 @@ int main(int argc, char *argv[]) {
     } else {
 
       fprintf(stderr,"Controller must be run as Root\n");
+      logging(__FILE__,__FUNCTION__,__LINE__,"Controller must be run as Root\n");
       free(conf);
       exit(EXIT_FAILURE);
     }

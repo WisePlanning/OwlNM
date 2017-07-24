@@ -150,8 +150,10 @@ void buffered_on_error(struct bufferevent *bev, short what, void *arg) {
 		/* Client disconnected, remove the read event and the
 		 * free the client structure. */
 		printf("Client disconnected.\n");
+		logging(__FILE__,__FUNCTION__,__LINE__,"Client disconnected.\n");
 	} else {
 		warn("Client socket error, disconnecting.\n");
+		logging(__FILE__,__FUNCTION__,__LINE__,"Client socket error, disconnecting.\n");
 	}
 
 	/* Remove the client from the tailq. */
@@ -175,22 +177,26 @@ void on_accept(int fd, short ev, void *arg) {
 	struct sockaddr_in client_addr;
 	socklen_t client_len = sizeof(client_addr);
 	struct client *client;
-	char s[INET6_ADDRSTRLEN];
 
 	client_fd = accept(fd, (struct sockaddr *)&client_addr, &client_len);
 	if (client_fd < 0) {
 		warn("accept failed");
+		logging(__FILE__,__FUNCTION__,__LINE__, "accept failed\n");
 		return;
 	}
 
 	/* Set the client socket to non-blocking mode. */
-	if (setnonblock(client_fd) < 0)
+	if (setnonblock(client_fd) < 0) {
+		logging(__FILE__,__FUNCTION__,__LINE__, "failed to set client socket non-blocking\n");
 		warn("failed to set client socket non-blocking");
+	}
 
 	/* We've accepted a new client, create a client object. */
 	client = calloc(1, sizeof(*client));
-	if (client == NULL)
+	if (client == NULL){
 		err(1, "malloc failed");
+		logging(__FILE__,__FUNCTION__,__LINE__, "malloc failed\n");
+	}
 	client->fd = client_fd;
 
 	client->buf_ev = bufferevent_socket_new(evbase, client_fd, 0);
@@ -205,8 +211,21 @@ void on_accept(int fd, short ev, void *arg) {
 	TAILQ_INSERT_TAIL(&client_tailq_head, client, entries);
 	clients_connected++;
 
+	char host[1024];
+	char service[20];
+
+	getnameinfo((struct sockaddr *)&client_addr, sizeof client_addr, host, sizeof host, service, sizeof service, 0);
+
 	if (conf->verbose)
-		printf("Accepted connection from %s: %d clients connected.\n",inet_ntop(client_addr.sin_family,get_in_addr((struct sockaddr *)&client_addr), s, sizeof(s)), clients_connected);
+		printf("Accepted connection from %s (%s:%s): %d clients connected.\n",
+			   host,
+			   inet_ntoa( client_addr.sin_addr ) ,
+			   service,
+			   clients_connected);
+
+	logging(__FILE__,__FUNCTION__,__LINE__, "Accepted connection from ");
+	if (conf->log_fd)
+		fprintf(conf->log_fd,"%s (%s:%s): %d clients connected.\n",host, inet_ntoa( client_addr.sin_addr ) ,service, clients_connected);
 }
 
 /**
@@ -226,7 +245,11 @@ void *get_in_addr(struct sockaddr *sa) {
  */
 int server_run_loop() {
 	if (conf->verbose)
-		puts("Starting Server");
+		printf("Starting Server\n");
+
+	logging(__FILE__,__FUNCTION__,__LINE__, "Starting Server\n");
+
+	log_config(conf);
 
 	struct addrinfo hints, *servinfo, *p;
 	struct sigaction sa;
@@ -235,22 +258,19 @@ int server_run_loop() {
 	int listen_fd;
 	struct event ev_accept;
 
-
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_INET;
 
 	/* Input events */
-	// #ifdef __FreeBSD__
-	// hints.ai_family = AF_INET;
-	// #else
 	hints.ai_family = AF_UNSPEC;
-	// #endif /* __FreeBSD__ */
-
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = AI_PASSIVE; // use my IP
 
 	if ((rv = getaddrinfo(NULL, conf->port, &hints, &servinfo)) != 0) {
 		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
+		logging(__FILE__,__FUNCTION__,__LINE__,"ERROR: getaddrinfo ");
+		if (conf->log_fd)
+			fprintf(conf->log_fd, "%s\n", gai_strerror(rv));
 		return 1;
 	}
 
@@ -258,17 +278,21 @@ int server_run_loop() {
 	for (p = servinfo; p != NULL; p = p->ai_next) {
 		if ((listen_fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
 			perror("server: socket");
+			logging(__FILE__,__FUNCTION__,__LINE__,"ERROR: socket");
 			continue;
 		}
 
 		if (setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
 			perror("setsockopt");
+			logging(__FILE__,__FUNCTION__,__LINE__,"ERROR: setsocketopt");
+			fclose(conf->log_fd);
 			exit(1);
 		}
 
 		if (bind(listen_fd, p->ai_addr, p->ai_addrlen) == -1) {
 			close(listen_fd);
 			perror("server: bind");
+			logging(__FILE__,__FUNCTION__,__LINE__,"ERROR: bind");
 			continue;
 		}
 
@@ -279,11 +303,15 @@ int server_run_loop() {
 
 	if (p == NULL) {
 		perror("server: failed to bind\n");
+		logging(__FILE__,__FUNCTION__,__LINE__,"ERROR: failed to bind\n");
+		fclose(conf->log_fd);
 		exit(1);
 	}
 
 	if (listen(listen_fd, BACKLOG) == -1) {
 		perror("listen");
+		logging(__FILE__,__FUNCTION__,__LINE__,"ERROR: listen_fd backlog = -1\n");
+		fclose(conf->log_fd);
 		exit(1);
 	}
 
@@ -293,11 +321,15 @@ int server_run_loop() {
 
 	if (sigaction(SIGCHLD, &sa, NULL) == -1) {
 		perror("sigaction");
+		logging(__FILE__,__FUNCTION__,__LINE__,"ERROR: sigaction = -1\n");
+		fclose(conf->log_fd);
 		exit(1);
 	}
 
 	if (conf->verbose)
 		printf("server: waiting for connections...\n");
+
+	logging(__FILE__,__FUNCTION__,__LINE__, "Waiting for connections\n");
 
 	/* Initialize libevent. */
 	evbase = event_base_new();
@@ -310,6 +342,7 @@ int server_run_loop() {
 
 	// Fork off the avahi service advertiser
 	if (conf->avahi) {
+		logging(__FILE__,__FUNCTION__,__LINE__,"AVAHI: Starting server\n");
 		pid = fork();
 		if (pid == 0) {
 			avahi_server();
@@ -326,5 +359,6 @@ int server_run_loop() {
 	/* Start the event loop. */
 	event_base_dispatch(evbase);
 
+	fclose(conf->log_fd);
 	return 0;
 }

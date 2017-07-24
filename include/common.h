@@ -30,6 +30,6 @@ extern void stoupper(char s[]);
 /* Convert to lowercase */
 extern void stolower(char s[]);
 
-extern void logging(const char *line, const char *message);
+extern void logging(const char *file,const char *func ,int line, const char *message);
 
 #endif

@@ -29,8 +29,9 @@ char *getSensorDeviceFileName(int position) {
 
 	if (cmd == NULL) {
 		printf("Could not determine sensor device file\n");
-	}
 
+		logging(__FILE__,__FUNCTION__,__LINE__,"Could not determine sensor device file\n");
+	}
 	/* zero the string */
 	memset(&buff, 0, 20);
 
@@ -82,23 +83,8 @@ int control_run_loop() {
 	if (conf->verbose)
 		printf("Starting Controller\n");
 
-	char *result = malloc(400);
-
-	strcpy(result,conf->log_path);
-	puts(result);
-	strcat(result,"/control_");
-	puts(result);
-
-	strcat(result,conf->log_name);
-	puts(result);
-
-	conf->log_fd = fopen(result,"w");
-
-	free(result);
-
-	if (conf->log_fd) {
-		logging("100","Starting Controller\n");
-	}
+	logging(__FILE__,__FUNCTION__,__LINE__,"Starting Controller\n");
+	log_config(conf);
 
 	struct timeval tv;
 
@@ -120,13 +106,14 @@ int control_run_loop() {
 		printf("Getting sensor1 \n");
 
 	if (conf->log_fd) {
-		logging(__LINE__,"Getting sensor1");
+		logging(__FILE__,__FUNCTION__,__LINE__,"Getting sensor1");
 	}
 
 	int sensor_device_1 = openDeviceFile(getSensorDeviceFileName(1));
 
 	if (conf->log_fd) {
-		logging(__LINE__,"Sensor 1 = %i \n",sensor_device_1);
+		logging(__FILE__,__FUNCTION__,__LINE__,"Sensor 1 = ");
+		fprintf(conf->log_fd, "%d\n", sensor_device_1);
 	}
 
 	// /* Get the keyboard file descriptos */
@@ -134,35 +121,38 @@ int control_run_loop() {
 		printf("Getting sensor 2\n");
 
 	if (conf->log_fd) {
-		logging("137","Getting sensor2 \n");
+		logging(__FILE__,__FUNCTION__,__LINE__,"Getting sensor2 \n");
 	}
 
 	int sensor_device_2 = openDeviceFile(getSensorDeviceFileName(2));
 
 	if (conf->log_fd) {
-		logging("143","Sensor 2 = %i \n",sensor_device_2);
-	}
+		logging(__FILE__,__FUNCTION__,__LINE__,"Sensor 2 = ");
+		fprintf(conf->log_fd, "%d\n", sensor_device_2);
+			}
 
 	if (!(sensor_device_1 > 0) || !(sensor_device_2 > 0)) {
 		perror("Could not get sensors");
 		if (conf->log_fd) {
-			logging("149", "Could not get sensors : %s\n", strerror(errno));
+			logging(__FILE__,__FUNCTION__,__LINE__, "Could not get sensors : ");
+			fprintf(conf->log_fd, "%s\n", strerror(errno));
 			fclose(conf->log_fd);
 		}
 		exit(EXIT_FAILURE);
 	}
 
 #ifdef HAVE_WIRINGPI
-	if (wiringPiSetupGpio () == -1)
+	if (wiringPiSetupGpio () == -1) {
+		fclose(conf->log_fd);
+		logging(__FILE__,__FUNCTION__,__LINE__, "Could not open GPIO\n");
 		exit(EXIT_FAILURE);
-
+	}
 	//set the pin to output
 	pinMode (LED, OUTPUT);
 
 	if (conf->verbose)
 		printf("LED OFF\n");
-	if (conf->log_fd)
-		logging(,"LED OFF\n");
+		logging(__FILE__,__FUNCTION__,__LINE__,"LED OFF\n");
 
 	// switch gpio pin to disable relay
 	digitalWrite(LED, OFF);
@@ -173,6 +163,7 @@ int control_run_loop() {
 	// if there is no server address,
 	if (conf->avahi || NULL == conf->server_address) {
 		do {
+			logging(__FILE__,__FUNCTION__,__LINE__, "Starting Avahi client\n");
 			avahi_client();
 		} while (NULL == conf->server_address);
 	}
@@ -180,9 +171,8 @@ int control_run_loop() {
 
   if (NULL == conf->server_address) {
 	printf("No server address\n");
-	if (conf->log_fd)
-		logging("184","No server address\n");
-
+	logging(__FILE__,__FUNCTION__,__LINE__,"No server address\n");
+	fclose(conf->log_fd);
 	exit(EXIT_FAILURE);
   }
 
@@ -190,16 +180,17 @@ int control_run_loop() {
 		listen_fd = get_socket();
 	} while (listen_fd <= 0);
 
-	if (conf->log_fd)
-		logging("194","Server Connection Socket = %i \n", listen_fd);
-
+	if (conf->log_fd) {
+		logging(__FILE__,__FUNCTION__,__LINE__,"Server Connection Socket = ");
+		fprintf(conf->log_fd, "%d\n", listen_fd);
+	}
 	reset_timer(&tv);
 
 	/* Setup the select device file array */
 	FD_ZERO(&master);
+	FD_SET(listen_fd, &master);     // connection to server
 	FD_SET(sensor_device_1, &master); // second sensor
 	FD_SET(sensor_device_2, &master); // first sensor
-	FD_SET(listen_fd, &master);     // connection to server
 
 	/* copy of the file descriptors for the sensors */
 	int fds[2];
@@ -212,7 +203,7 @@ int control_run_loop() {
 	while (TRUE) {
 
 		read_set = master;
-		fd_max = listen_fd + 1;
+		fd_max = sensor_device_2 + 1;
 
 		int ret = select(fd_max, &read_set, NULL, NULL, &tv);
 
@@ -220,11 +211,11 @@ int control_run_loop() {
 
 			perror("Error reading data!\n");
 
-			if (conf->log_fd)
-				logging(,"Error reading data!\n");
+			if (conf->log_fd) {
+				logging(__FILE__,__FUNCTION__,__LINE__,"Error reading data!\n");
+			}
 
-			FD_CLR(sensor_device_1, &master); // second sensor
-			FD_CLR(sensor_device_2, &master); // first sensor
+			FD_ZERO(&master);
 
 			/* Close the sensor device file descriptors */
 			shutdown(sensor_device_1, 2);
@@ -234,9 +225,9 @@ int control_run_loop() {
 			int sensor_device_1 = openDeviceFile(getSensorDeviceFileName(1));
 			int sensor_device_2 = openDeviceFile(getSensorDeviceFileName(2));
 
+			FD_SET(listen_fd, &master);     // connection to server
 			FD_SET(sensor_device_1, &master); // second sensor
 			FD_SET(sensor_device_2, &master); // first sensor
-			sensor_device_2 = listen_fd + 1;
 
 		} else if (ret == 0) {
 			/* Nothing happened */
@@ -244,14 +235,13 @@ int control_run_loop() {
 			reset_timer(&tv);
 
 			if (conf->verbose) {
-				puts("timeout");
+				printf("timeout\n");
 			}
 
 			/* Send the stop signal when the last sensor was END and the video was
 			 * playing  */
-			// if (playing && end) {
 				if (conf->verbose) {
-					puts("Stopping playback\n");
+					printf("Stopping playback\n");
 				}
 
 				/* Send the stop signal */
@@ -259,7 +249,6 @@ int control_run_loop() {
 
 				playing = FALSE;
 				end = FALSE;
-			// }
 		} else {
 
 			/* Check the link with the server */
@@ -270,7 +259,9 @@ int control_run_loop() {
 				/* if disconnected, try to reconnect */
 				if (ret == 0) {
 					perror("Connection to server Lost. Reconnecting.\n");
-					do {
+					logging(__FILE__,__FUNCTION__,__LINE__, "Connection to server Lost. Reconnecting.\n");
+					do
+					{
 						/* reconnect */
 						shutdown(listen_fd, 2);
 
@@ -347,5 +338,7 @@ int control_run_loop() {
 			}
 		}
 	}
+
+	fclose(conf->log_fd);
 	return 0;
 } /* control_run_loop */

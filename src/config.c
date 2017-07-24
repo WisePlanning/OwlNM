@@ -34,9 +34,29 @@ void display_config(Config *co) {
   printf("Log file:\t%s\n", co->log_name);
 
   if (co->avahi)
-    puts("Use Avahi:\tTrue");
+    printf("Use Avahi:\tTrue\n");
   else
-    puts("Use Avahi:\tFalse");
+    printf("Use Avahi:\tFalse\n");
+}
+
+/* Log the config in use */
+void log_config(Config *co) {
+
+  if (co->server_address != FALSE) {
+    fprintf(co->log_fd,"Server address:\t%s\n", co->server_address);
+  }
+  fprintf(co->log_fd,"Port:\t\t%s\n", co->port);
+  fprintf(co->log_fd,"Mode:\t\t%s\n", MODE_STRING[co->mode]);
+  fprintf(co->log_fd,"Video timeout:\t%d\n", co->timeout);
+  fprintf(co->log_fd,"Video file:\t%s\n", co->video_file);
+  fprintf(co->log_fd,"Config file:\t%s\n", co->config_file);
+  fprintf(co->log_fd,"Log file:\t%s\n", co->log_name);
+
+  if (co->avahi)
+   fprintf(co->log_fd,"Use Avahi:\tTrue\n");
+  else
+    fprintf(co->log_fd,"Use Avahi:\tFalse\n");
+  fflush(co->log_fd);
 }
 
 /**
@@ -60,7 +80,6 @@ Config *clear_config(Config *in) {
 	in->video_file = NULL;
 	in->video_player = NULL;
 	in->config_file = NULL;
-  in->log_open = false;
 	in->log_name = NULL;
   in->log_path = NULL;
 	in->avahi = 0;
@@ -471,5 +490,6 @@ Config *read_cli_inputs(int argc, char *argv[]) {
     tmp->config_file = malloc(BUF_SIZE);
     strcpy(tmp->config_file, DEFAULT_CONFIG_FILE);
   }
+
   return tmp;
 }

@@ -21,6 +21,10 @@ int get_socket() {
 
 	if ((status = getaddrinfo(conf->server_address, conf->port, &hints, &res)) != 0) {
 		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(status));
+		logging(__FILE__,__FUNCTION__,__LINE__,"ERROR: getaddrinfo");
+			if (conf->log_fd){
+				fprintf(conf->log_fd,"%s\n", strerror(errno));
+			}
 		return -1;
 	}
 
@@ -28,11 +32,19 @@ int get_socket() {
 	for (p = res; p != NULL; p = p->ai_next) {
 		if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
 			perror("socket");
+			logging(__FILE__,__FUNCTION__,__LINE__,"ERROR: socket");
+				if (conf->log_fd){
+				fprintf(conf->log_fd,"%s\n", strerror(errno));
+			}
 			continue;
 		}
 
 		if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
 			perror("connect");
+			logging(__FILE__,__FUNCTION__,__LINE__,"ERROR: connect");
+				if (conf->log_fd){
+				fprintf(conf->log_fd,"%s\n", strerror(errno));
+			}
 			close(sockfd);
 			continue;
 		}
@@ -68,25 +80,37 @@ void reset_timer(struct timeval *tv) {
 	if (conf->verbose)
 		printf("resetting timer");
 
-	if (conf->log_fd)
-		fprintf(conf->log_fd,"Resetting timer\n");
+	logging(__FILE__,__FUNCTION__,__LINE__,"Resetting Timer");
 
 	tv->tv_sec = conf->timeout;
 	tv->tv_usec = UTIMEOUT;
 
 }
 
-void logging(const char *line,const char *message) {
-	time_t     current_time;
-    struct tm *struct_time;
+void logging(const char *file, const char *func, int line, const char *message) {
 
-    time( &current_time);
+	time_t current_time;
+	struct tm *struct_time;
 
-    struct_time = gmtime( &current_time);
+	time( &current_time);
+
+	struct_time = gmtime( &current_time);
 
 	if (conf->log_fd) {
-		fprintf(conf->log_fd,"%d-%02d-%d %02d-%d-%d line:%s :%s",struct_time->tm_year+1900,struct_time->tm_mon+1,struct_time->tm_mday,struct_time->tm_hour,struct_time->tm_min,struct_time->tm_sec,line, message);
-	}
+		fprintf(conf->log_fd,"%d-%02d-%d %02d-%02d-%02d file:%s line:%i func:%s  :%s",
+		struct_time->tm_year+1900,
+		struct_time->tm_mon+1,
+		struct_time->tm_mday,
+		struct_time->tm_hour,
+		struct_time->tm_min,
+		struct_time->tm_sec,
+		file,
+		line,
+		func,
+		message);
+
+	fflush(conf->log_fd);
+}
 }
 
 /* Root is required to capture device input */
@@ -95,8 +119,7 @@ bool rootCheck() {
 	if (conf->verbose)
 		printf("Checking for root permissions\n");
 
-	if (conf->log_fd)
-		fprintf(conf->log_fd,"Checking for root permissions\n");
+	logging(__FILE__,__FUNCTION__,__LINE__,"Checking for root permissions\n");
 
 	if (geteuid() != 0)
 	{
@@ -142,7 +165,7 @@ int send_stop(int sockfd) {
 	int ret;
 
 	if (conf->verbose)
-		puts("Sending stop to server\n");
+		printf("Sending stop to server\n");
 
 	ret = send(sockfd, STOP, sizeof(STOP), 0);
 
@@ -151,18 +174,26 @@ int send_stop(int sockfd) {
 	if (conf->verbose)
 		printf("LED OFF\n");
 
+	logging(__FILE__,__FUNCTION__,__LINE__,"LED OFF\n");
+
 	digitalWrite(LED, OFF);
 
 	#endif
 
 	if (ret < 0) {
 
-		printf("Error sending data!\n\t-%s", PLAY);
+		logging(__FILE__,__FUNCTION__,__LINE__,"Error sending data!\n\t-STOP");
+
+		if(conf->verbose)
+			printf("Error sending data!\n\t-%s", STOP);
 
 	} else {
 
 		if (conf->verbose)
-			puts("success...");
+			printf("success...");
+
+		logging(__FILE__,__FUNCTION__,__LINE__,"Success\n");
+
 	}
 
 	return (ret);
@@ -179,7 +210,9 @@ int send_start(int sockfd) {
 	int ret;
 
 	if (conf->verbose)
-		puts("Sending start to server\n");
+		printf("Sending start to server\n");
+
+	logging(__FILE__,__FUNCTION__,__LINE__,"Sending start to server\n");
 
 	ret = send(sockfd, PLAY, sizeof(PLAY), 0);
 
@@ -191,15 +224,18 @@ int send_start(int sockfd) {
 	if (conf->verbose)
 		printf("LED ON\n");
 
+	logging(__FILE__,__FUNCTION__,__LINE__,"LED ON\n");
+
 	#endif /* HAVE_WIRINGPI */
 
 	if (ret < 0) {
 		printf("Error sending data!\n\t-%s", PLAY);
-
+			logging(__FILE__,__FUNCTION__,__LINE__,"Error sending data!\n\t-PLAY\n");
 	} else {
 
 		if (conf->verbose)
-			puts("success...");
+			printf("success...");
+			logging(__FILE__,__FUNCTION__,__LINE__,"Error sending data!\n\t-PLAY\n");
 	}
 
 	return (ret);
@@ -216,6 +252,7 @@ int openDeviceFile(char *deviceFile) {
 
 	if (dev_fd == -1) {
 		perror("Could not get device\n");
+		logging(__FILE__,__FUNCTION__,__LINE__,"Could not get device\n");
 		return 0;
 	}
 
