@@ -120,13 +120,13 @@ int control_run_loop() {
 		printf("Getting sensor1 \n");
 
 	if (conf->log_fd) {
-		logging("123","Getting sensor1");
+		logging(__LINE__,"Getting sensor1");
 	}
 
 	int sensor_device_1 = openDeviceFile(getSensorDeviceFileName(1));
 
 	if (conf->log_fd) {
-		logging("129","Sensor 1 = %i \n",sensor_device_1);
+		logging(__LINE__,"Sensor 1 = %i \n",sensor_device_1);
 	}
 
 	// /* Get the keyboard file descriptos */
