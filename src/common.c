@@ -1,5 +1,5 @@
 #include "common.h"
-
+#include <time.h>
 /**
  * Get a socket descriptor
  * @method get_socket
@@ -66,11 +66,27 @@ void set_nonblocking(int socket) {
 void reset_timer(struct timeval *tv) {
 
 	if (conf->verbose)
-		puts("resetting timer");
+		printf("resetting timer");
+
+	if (conf->log_fd)
+		fprintf(conf->log_fd,"Resetting timer\n");
 
 	tv->tv_sec = conf->timeout;
 	tv->tv_usec = UTIMEOUT;
 
+}
+
+void logging(const char *line,const char *message) {
+	time_t     current_time;
+    struct tm *struct_time;
+
+    time( &current_time);
+
+    struct_time = gmtime( &current_time);
+
+	if (conf->log_fd) {
+		fprintf(conf->log_fd,"%d-%02d-%d %02d-%d-%d line:%s :%s",struct_time->tm_year+1900,struct_time->tm_mon+1,struct_time->tm_mday,struct_time->tm_hour,struct_time->tm_min,struct_time->tm_sec,line, message);
+	}
 }
 
 /* Root is required to capture device input */
@@ -78,6 +94,9 @@ bool rootCheck() {
 
 	if (conf->verbose)
 		printf("Checking for root permissions\n");
+
+	if (conf->log_fd)
+		fprintf(conf->log_fd,"Checking for root permissions\n");
 
 	if (geteuid() != 0)
 	{

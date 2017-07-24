@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
       control_run_loop();
     } else {
 
-      puts("Controller must be run as Root\n");
+      fprintf(stderr,"Controller must be run as Root\n");
       free(conf);
       exit(EXIT_FAILURE);
     }

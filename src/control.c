@@ -82,9 +82,22 @@ int control_run_loop() {
 	if (conf->verbose)
 		printf("Starting Controller\n");
 
-	conf->log_fd = fopen(conf->log_name);
+	char *result = malloc(400);
+
+	strcpy(result,conf->log_path);
+	puts(result);
+	strcat(result,"/control_");
+	puts(result);
+
+	strcat(result,conf->log_name);
+	puts(result);
+
+	conf->log_fd = fopen(result,"w");
+
+	free(result);
+
 	if (conf->log_fd) {
-		fprintf(conf->log_fd,"Starting Controller\n");
+		logging("100","Starting Controller\n");
 	}
 
 	struct timeval tv;
@@ -104,18 +117,38 @@ int control_run_loop() {
 
 	/* Get the keyboard file descriptos */
 	if (conf->verbose)
-		printf("Getting sensor \n");
+		printf("Getting sensor1 \n");
+
+	if (conf->log_fd) {
+		logging("123","Getting sensor1");
+	}
 
 	int sensor_device_1 = openDeviceFile(getSensorDeviceFileName(1));
+
+	if (conf->log_fd) {
+		logging("129","Sensor 1 = %i \n",sensor_device_1);
+	}
 
 	// /* Get the keyboard file descriptos */
 	if (conf->verbose)
 		printf("Getting sensor 2\n");
 
+	if (conf->log_fd) {
+		logging("137","Getting sensor2 \n");
+	}
+
 	int sensor_device_2 = openDeviceFile(getSensorDeviceFileName(2));
+
+	if (conf->log_fd) {
+		logging("143","Sensor 2 = %i \n",sensor_device_2);
+	}
 
 	if (!(sensor_device_1 > 0) || !(sensor_device_2 > 0)) {
 		perror("Could not get sensors");
+		if (conf->log_fd) {
+			logging("149", "Could not get sensors : %s\n", strerror(errno));
+			fclose(conf->log_fd);
+		}
 		exit(EXIT_FAILURE);
 	}
 
@@ -128,6 +161,8 @@ int control_run_loop() {
 
 	if (conf->verbose)
 		printf("LED OFF\n");
+	if (conf->log_fd)
+		logging(,"LED OFF\n");
 
 	// switch gpio pin to disable relay
 	digitalWrite(LED, OFF);
@@ -144,13 +179,19 @@ int control_run_loop() {
 #endif
 
   if (NULL == conf->server_address) {
-	    printf("No server address\n");
-    exit(1);
+	printf("No server address\n");
+	if (conf->log_fd)
+		logging("184","No server address\n");
+
+	exit(EXIT_FAILURE);
   }
 
 	do {
 		listen_fd = get_socket();
 	} while (listen_fd <= 0);
+
+	if (conf->log_fd)
+		logging("194","Server Connection Socket = %i \n", listen_fd);
 
 	reset_timer(&tv);
 
@@ -178,6 +219,9 @@ int control_run_loop() {
 		if (ret == -1) {
 
 			perror("Error reading data!\n");
+
+			if (conf->log_fd)
+				logging(,"Error reading data!\n");
 
 			FD_CLR(sensor_device_1, &master); // second sensor
 			FD_CLR(sensor_device_2, &master); // first sensor

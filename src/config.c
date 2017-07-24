@@ -62,6 +62,7 @@ Config *clear_config(Config *in) {
 	in->config_file = NULL;
   in->log_open = false;
 	in->log_name = NULL;
+  in->log_path = NULL;
 	in->avahi = 0;
   return in;
 }
@@ -85,6 +86,8 @@ void free_config(Config *input) {
     free(input->config_file);
   if (NULL != input->log_name)
     free(input->log_name);
+      if (NULL != input->log_path)
+    free(input->log_path);
   if (NULL != input->server_address)
     free(input->server_address);
 
@@ -300,6 +303,18 @@ Config *combine_config(Config *cli_flags, Config *conf_file) {
       strcpy(tmp->log_name, conf_file->log_name);
     } else {
       strcpy(tmp->log_name, DEFAULT_LOG_FILE);
+    }
+  }
+
+  // Logname
+  tmp->log_path = malloc(BUF_SIZE);
+	if (cli_flags->log_path != NULL) {
+    strcpy(tmp->log_path, cli_flags->log_path);
+  } else {
+		if (conf_file != NULL && conf_file->log_path != NULL) {
+      strcpy(tmp->log_path, conf_file->log_path);
+    } else {
+      strcpy(tmp->log_path, DEFAULT_LOG_PATH);
     }
   }
 
