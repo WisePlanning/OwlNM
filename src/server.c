@@ -44,8 +44,7 @@ void sigchld_handler(int s) {
 	// waitpid() might overwrite errno, so we save and restore it:
 	int saved_errno = errno;
 
-	while (waitpid(-1, NULL, WNOHANG) > 0)
-		;
+	while (waitpid(-1, NULL, WNOHANG) > 0);
 
 	errno = saved_errno;
 }
@@ -159,7 +158,9 @@ void buffered_on_error(struct bufferevent *bev, short what, void *arg) {
 	/* Remove the client from the tailq. */
 	TAILQ_REMOVE(&client_tailq_head, client, entries);
 	clients_connected--;
+
 	bufferevent_free(client->buf_ev);
+
 	close(client->fd);
 	free(client);
 }
@@ -193,10 +194,12 @@ void on_accept(int fd, short ev, void *arg) {
 
 	/* We've accepted a new client, create a client object. */
 	client = calloc(1, sizeof(*client));
+
 	if (client == NULL){
 		err(1, "malloc failed");
 		logging(__FILE__,__FUNCTION__,__LINE__, "malloc failed\n");
 	}
+
 	client->fd = client_fd;
 
 	client->buf_ev = bufferevent_socket_new(evbase, client_fd, 0);
@@ -354,6 +357,7 @@ int server_run_loop() {
 	/* We now have a listening socket, we create a read event to
 	 * be notified when a client connects. */
 	event_assign(&ev_accept, evbase, listen_fd, EV_READ | EV_PERSIST, on_accept, NULL);
+
 	event_add(&ev_accept, NULL);
 
 	/* Start the event loop. */

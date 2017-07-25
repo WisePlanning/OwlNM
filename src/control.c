@@ -1,4 +1,6 @@
-#include "control.h"
+#include "client.h"
+
+#define EVLOOP_NO_EXIT_ON_EMPTY 0x04
 
 /**
  * Get the device for sensor input
@@ -12,8 +14,8 @@ char *getSensorDeviceFileName(int position) {
 
 	/* get the devicenames of sensors */
 	static const char *command = "grep -E 'Handlers|EV' /proc/bus/input/devices |"
-	                            //  "grep -B1 120013 |"  // Keyboard identifier
-	                             "grep -B1 100013 |"  // Sensor identifier
+	                             "grep -B1 120013 |"  // Keyboard identifier
+	                            //  "grep -B1 100013 |"  // Sensor identifier
 	                             "grep -Eo event[0-9]+ |"
 	                             "tr -d '\\n'";
 
@@ -28,8 +30,6 @@ char *getSensorDeviceFileName(int position) {
 	FILE *cmd = popen(command, "r");
 
 	if (cmd == NULL) {
-		printf("Could not determine sensor device file\n");
-
 		logging(__FILE__,__FUNCTION__,__LINE__,"Could not determine sensor device file\n");
 	}
 	/* zero the string */
@@ -58,11 +58,6 @@ char *getSensorDeviceFileName(int position) {
 		return 0;
 	}
 
-	if (conf->verbose) {
-		printf("%s\n", sensor_device_1);
-		printf("%s\n", sensor_device_2);
-	}
-
 	/* return the sensor device */
 	if (position == 1) {
 		return (strdup(strcat(path_prefix, sensor_device_1)));
@@ -73,277 +68,232 @@ char *getSensorDeviceFileName(int position) {
 	return 0;
 }
 
+
 /**
- * Controller loop
- * @method control_run_loop
- * @return boolean
+ * Called on when there is data to read on the socket
+ * @param void*
+ * @param bufferevent*
+ * @return void
+ */
+void control_read_callback(struct bufferevent *bev, void *ctx) {
+	int n;
+	char buf[BUF_SIZE];
+	char buffer[BUF_SIZE];
+	struct evbuffer *input = bufferevent_get_input(bev);
+
+	/* Copy all the data to a buffer */
+	while ((n = evbuffer_remove(input, buf, sizeof(buf))) > 0) {
+		strcpy(buffer, buf);
+	}
+
+	/* process */
+	if (strncmp(buffer, PLAY, 4) == 0) {
+		/* Start the video player */
+		if (!play_video()) {
+			logging(__FILE__,__FUNCTION__,__LINE__,"Error: ");
+			if (conf->log_fd){
+				fprintf(conf->log_fd,"%s\n", strerror(errno));
+			}
+		}
+	}
+
+	if ((strncmp(buffer, STOP, 4) == 0)) {
+		/* Kill any running video players */
+		if (!stop_video()) {
+			logging(__FILE__,__FUNCTION__,__LINE__,"Error: ");
+			if (conf->log_fd){
+				fprintf(conf->log_fd,"%s\n", strerror(errno));
+			}
+		}
+	}
+}
+
+/**
+ * Called on socket event
+ * @param void*
+ * @param short
+ * @param bufferevent*
+ * @return void
+ */
+void control_event_callback(struct bufferevent *bev, short events, void *ctx) {
+	if (events & BEV_EVENT_CONNECTED) {
+
+		logging(__FILE__,__FUNCTION__,__LINE__,"Connected\n");
+
+	} else if (events & BEV_EVENT_EOF) {
+
+		logging(__FILE__,__FUNCTION__,__LINE__, "Connection closed.\n");
+
+		sleep(5);
+
+		/* cleanup */
+		bufferevent_free(bev);
+
+		/* Exit the current loop */
+		event_base_loopexit(ctx, NULL);
+
+		/* Start again */
+		client_run_loop();
+	} else if (events & BEV_EVENT_ERROR) {
+		if (conf->verbose)
+			printf("Got an error on the connection: %s\n", strerror(errno));
+
+		logging(__FILE__,__FUNCTION__,__LINE__, "Got an error on the connection :");
+		fprintf(conf->log_fd,"%s\n",strerror(errno));
+
+		sleep(5);
+
+		/* cleanup */
+		bufferevent_free(bev);
+
+		/* Exit the current loop */
+		event_base_loopexit(ctx, NULL);
+
+		/* Start again */
+		client_run_loop();
+	}
+}
+
+/**
+ * The loop for clients
+ * @return
  */
 int control_run_loop() {
 
-	if (conf->verbose)
-		printf("Starting Controller\n");
-
-	logging(__FILE__,__FUNCTION__,__LINE__,"Starting Controller\n");
+	logging(__FILE__,__FUNCTION__,__LINE__, "Starting Client - LibEvent\n");
 	log_config(conf);
 
-	struct timeval tv;
+	/* Kill any running video players */
+	if (!stop_video()) {
+		logging(__FILE__,__FUNCTION__,__LINE__, "ERROR :");
+		if (conf->log_fd) {fprintf(conf->log_fd,"%s\n",strerror(errno));}
+	}
 
-	uint8_t shift_pressed = 0;
-
-	input_event event;
-
-	fd_set master;
-	fd_set read_set;
-
-	bool playing = FALSE;
-	bool end = FALSE;
-
-	int fd_max = 0;
-	int listen_fd = 0;
+	struct event_base *base;
+	struct bufferevent *bev = NULL;
+	struct bufferevent *bev1 = NULL;
+	struct bufferevent *bev2 = NULL;
+	base = NULL;
 
 	/* Get the keyboard file descriptos */
-	if (conf->verbose)
-		printf("Getting sensor1 \n");
-
-		logging(__FILE__,__FUNCTION__,__LINE__,"Getting sensor1");
+	logging(__FILE__,__FUNCTION__,__LINE__,"Getting sensor 1\n");
 
 	int sensor_device_1 = openDeviceFile(getSensorDeviceFileName(1));
 
-	if (conf->log_fd) {
-		logging(__FILE__,__FUNCTION__,__LINE__,"Sensor 1 = ");
-		fprintf(conf->log_fd, "%d\n", sensor_device_1);
-	}
+	logging(__FILE__,__FUNCTION__,__LINE__,"Sensor 1 = ");
+	if (conf->log_fd) {fprintf(conf->log_fd, "%d\n", sensor_device_1);}
 
 	// /* Get the keyboard file descriptos */
-	if (conf->verbose)
-		printf("Getting sensor 2\n");
+	// logging(__FILE__,__FUNCTION__,__LINE__,"Getting sensor2 \n");
+	// int sensor_device_2 = openDeviceFile(getSensorDeviceFileName(2));
 
-		logging(__FILE__,__FUNCTION__,__LINE__,"Getting sensor2 \n");
 
-	int sensor_device_2 = openDeviceFile(getSensorDeviceFileName(2));
+	// logging(__FILE__,__FUNCTION__,__LINE__,"Sensor 2 = ");
+	// if (conf->log_fd) {fprintf(conf->log_fd, "%d\n", sensor_device_2);}
 
-	if (conf->log_fd) {
-		logging(__FILE__,__FUNCTION__,__LINE__,"Sensor 2 = ");
-		fprintf(conf->log_fd, "%d\n", sensor_device_2);
-			}
-
-	if (!(sensor_device_1 > 0) || !(sensor_device_2 > 0)) {
-		perror("Could not get sensors");
-		if (conf->log_fd) {
-			logging(__FILE__,__FUNCTION__,__LINE__, "Could not get sensors : ");
-			fprintf(conf->log_fd, "%s\n", strerror(errno));
-			fclose(conf->log_fd);
-		}
-		exit(EXIT_FAILURE);
-	}
+	// if (!(sensor_device_1 > 0) || !(sensor_device_2 > 0)) {
+	// 	logging(__FILE__,__FUNCTION__,__LINE__, "Could not get sensors : ");
+	// 	if (conf->log_fd) {fprintf(conf->log_fd, "%s\n", strerror(errno));}
+	// 	if (conf->log_fd) {fclose(conf->log_fd);}
+	// 	exit(EXIT_FAILURE);
+	// }
 
 #ifdef HAVE_WIRINGPI
 	if (wiringPiSetupGpio () == -1) {
 		logging(__FILE__,__FUNCTION__,__LINE__, "Could not open GPIO\n");
-		fclose(conf->log_fd);
+		if (conf->log_fd) {fclose(conf->log_fd);}
 		exit(EXIT_FAILURE);
 	}
 	//set the pin to output
 	pinMode (LED, OUTPUT);
 
-	if (conf->verbose)
-		printf("LED OFF\n");
-		logging(__FILE__,__FUNCTION__,__LINE__,"LED OFF\n");
+	logging(__FILE__,__FUNCTION__,__LINE__,"LED OFF\n");
 
 	// switch gpio pin to disable relay
 	digitalWrite(LED, OFF);
 #endif
 
-#ifdef HAVE_AVAHI
-	// use avahi to find the server
+
 	// if there is no server address,
+  #ifdef HAVE_AVAHI
 	if (conf->avahi || NULL == conf->server_address) {
 		do {
-			logging(__FILE__,__FUNCTION__,__LINE__, "Starting Avahi client\n");
 			avahi_client();
 		} while (NULL == conf->server_address);
 	}
-#endif
+  #endif
 
-  if (NULL == conf->server_address) {
-	printf("No server address\n");
-	logging(__FILE__,__FUNCTION__,__LINE__,"No server address\n");
-	fclose(conf->log_fd);
-	exit(EXIT_FAILURE);
-  }
+	if (NULL == conf->server_address) {
+		logging(__FILE__,__FUNCTION__,__LINE__, "No server address\n");
+		if (conf->log_fd) {fclose(conf->log_fd);}
+		exit(EXIT_FAILURE);
+	}
 
+	/* libevent base object */
+	base = event_base_new();
+
+	if (!base) {
+		logging(__FILE__,__FUNCTION__,__LINE__, "Could not initialize libevent! :");
+		if (conf->log_fd){fprintf(conf->log_fd,"%s\n", strerror(errno));}
+		if (conf->log_fd) {fclose(conf->log_fd);}
+		return (EXIT_FAILURE);
+	}
+
+	/* socket file descriptor */
+	int listen_fd = 0;
+
+	/* Get  and connect a socket */
 	do {
 		listen_fd = get_socket();
 	} while (listen_fd <= 0);
 
-	if (conf->log_fd) {
-		logging(__FILE__,__FUNCTION__,__LINE__,"Server Connection Socket = ");
-		fprintf(conf->log_fd, "%d\n", listen_fd);
-	}
+	logging(__FILE__,__FUNCTION__,__LINE__,"Connected\n");
 
-	reset_timer(&tv);
+	/* create the socket */
+	bev = bufferevent_socket_new(base, listen_fd, BEV_OPT_CLOSE_ON_FREE);
 
-	/* Setup the select device file array */
-	FD_ZERO(&master);
-	FD_SET(listen_fd, &master);     // connection to server
-	FD_SET(sensor_device_1, &master); // second sensor
-	FD_SET(sensor_device_2, &master); // first sensor
+	if (!bev)
+		exit(EXIT_FAILURE);
+	/* set the callbacks */
+	bufferevent_setcb(bev, control_read_callback, NULL, control_event_callback, base);
 
-	/* copy of the file descriptors for the sensors */
-	int fds[2];
-	memset(&fds, 0, 2);
+	/* enable reading */
+	bufferevent_enable(bev, EV_WRITE | EV_PERSIST);
 
-	fds[0] = sensor_device_1;
-	fds[1] = sensor_device_2;
+	/* create the socket */
+	bev1 = bufferevent_socket_new(base, sensor_device_1, BEV_OPT_CLOSE_ON_FREE);
 
-	/* Wait for timeout or person to leave */
-	while (TRUE) {
+	if (!bev1)
+		exit(EXIT_FAILURE);
+	/* set the callbacks */
+	bufferevent_setcb(bev1, control_read_callback, NULL, control_event_callback, base);
 
-		read_set = master;
-		fd_max = sensor_device_2 + 1;
+	/* enable reading */
+	bufferevent_enable(bev1, EV_READ | EV_PERSIST);
+		/* create the socket */
+	// bev2 = bufferevent_socket_new(base, sensor_device_2, BEV_OPT_CLOSE_ON_FREE);
 
-		int ret = select(fd_max, &read_set, NULL, NULL, &tv);
+	// if (!bev2)
+	// 	exit(EXIT_FAILURE);
+	// /* set the callbacks */
+	// bufferevent_setcb(bev2, control_read_callback, NULL, control_event_callback, base);
 
-		if (ret == -1) {
+	// /* enable reading */
+	// bufferevent_enable(bev2, EV_READ | EV_PERSIST);
 
-			perror("Error reading data!\n");
+	/* Start the event loop */
+	event_base_loop(base, EVLOOP_NO_EXIT_ON_EMPTY);
 
-			logging(__FILE__,__FUNCTION__,__LINE__,"Error reading data!");
-			if (conf->log_fd) {
-				fprintf(conf->log_fd, "%s\n", strerror(errno));
-			}
+	// free the stuff
+	bufferevent_free(bev);
+	bufferevent_free(bev1);
+	bufferevent_free(bev2);
 
-			FD_ZERO(&master);
+	// free the event base
+	event_base_free(base);
 
-			/* Close the sensor device file descriptors */
-			shutdown(sensor_device_1, 2);
-			shutdown(sensor_device_2, 2);
-
-			/* Get the file descriptors */
-			int sensor_device_1 = openDeviceFile(getSensorDeviceFileName(1));
-			int sensor_device_2 = openDeviceFile(getSensorDeviceFileName(2));
-
-			FD_SET(listen_fd, &master);     // connection to server
-			FD_SET(sensor_device_1, &master); // second sensor
-			FD_SET(sensor_device_2, &master); // first sensor
-
-			reset_timer(&tv);
-
-		} else if (ret == 0) {
-			/* Nothing happened */
-
-			if (conf->verbose) {
-				printf("timeout\n");
-			}
-
-			/* Send the stop signal when the last sensor was END and the video was
-			 * playing  */
-				if (conf->verbose) {
-					printf("Stopping playback\n");
-				}
-
-			/* Send the stop signal */
-			send_stop(listen_fd);
-
-			playing = FALSE;
-			end = FALSE;
-
-			reset_timer(&tv);
-		} else {
-
-			/* Check the link with the server */
-			if (FD_ISSET(listen_fd, &read_set)) {
-
-				ret = read(listen_fd, &event, sizeof(input_event));
-
-				/* if disconnected, try to reconnect */
-				if (ret == 0) {
-					perror("Connection to server Lost. Reconnecting.\n");
-
-					logging(__FILE__,__FUNCTION__,__LINE__, "Connection to server Lost. Reconnecting.\n");
-					if (conf->log_fd) {
-						fprintf(conf->log_fd, "%s\n", strerror(errno));
-					}
-
-					do
-					{
-						/* reconnect */
-						shutdown(listen_fd, 2);
-
-						#ifdef HAVE_AVAHI
-						if (conf->avahi)
-							avahi_client();
-						#endif
-
-						listen_fd = get_socket();
-						sleep(5);
-
-					} while (listen_fd <= 0);
-
-					FD_ZERO(&master);
-					FD_SET(listen_fd, &master);
-					FD_SET(sensor_device_1, &master);
-					FD_SET(sensor_device_2, &master);
-
-					reset_timer(&tv);
-				}
-			}
-
-			/* loop through the sensor devices */
-			for (int i = 0; i < 2; ++i) {
-				if (FD_ISSET(fds[i], &read_set)) { // if the fd is in the set
-					if ((ret = read(fds[i], &event, sizeof(input_event))) > 0) { // read from it
-						if (event.type == EV_KEY) {
-							if (event.value == KEY_PRESS) {
-								if (isShift(event.code)) {
-									shift_pressed++;
-								}
-
-								char *name = getKeyText(event.code, shift_pressed);
-
-								if (strcmp(name, UNKNOWN_KEY) != 0) { // if we can ident the key
-									if (0 == strcmp(name, ENTER)) {
-										if (!playing) {
-											if (0 > send_start(listen_fd)) {
-												playing = FALSE;
-											}
-
-											if (conf->verbose) {
-												printf("Entered the area, starting playback\n");
-											}
-											playing = TRUE;
-											reset_timer(&tv);
-
-											end = FALSE;
-										} else {
-											reset_timer(&tv);
-											if (conf->verbose) {
-												printf("Someone else entered\n");
-											}
-											end = FALSE;
-										}
-									}
-
-									if (0 == strcmp(name, LEAVE)) {
-										if (conf->verbose) {
-											printf("Leaving the area, starting timer\n");
-										}
-										reset_timer(&tv);
-										end = TRUE;
-									}
-								}
-							} else if (event.value == KEY_RELEASE) {
-								if (isShift(event.code)) {
-									shift_pressed--;
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-
+	// exit
 	fclose(conf->log_fd);
-	return 0;
-} /* control_run_loop */
+
+	exit (EXIT_FAILURE);
+}

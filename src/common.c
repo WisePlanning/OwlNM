@@ -20,7 +20,6 @@ int get_socket() {
 	hints.ai_socktype = SOCK_STREAM;
 
 	if ((status = getaddrinfo(conf->server_address, conf->port, &hints, &res)) != 0) {
-		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(status));
 		logging(__FILE__,__FUNCTION__,__LINE__,"ERROR: getaddrinfo");
 			if (conf->log_fd){
 				fprintf(conf->log_fd,"%s\n", strerror(errno));
@@ -31,7 +30,6 @@ int get_socket() {
 	/* loop through all the results and connect to the first we can */
 	for (p = res; p != NULL; p = p->ai_next) {
 		if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
-			perror("socket");
 			logging(__FILE__,__FUNCTION__,__LINE__,"ERROR: socket");
 				if (conf->log_fd){
 				fprintf(conf->log_fd,"%s\n", strerror(errno));
@@ -40,7 +38,6 @@ int get_socket() {
 		}
 
 		if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
-			perror("connect");
 			logging(__FILE__,__FUNCTION__,__LINE__,"ERROR: connect");
 				if (conf->log_fd){
 				fprintf(conf->log_fd,"%s\n", strerror(errno));
@@ -77,9 +74,6 @@ void set_nonblocking(int socket) {
  */
 void reset_timer(struct timeval *tv) {
 
-	if (conf->verbose)
-		printf("resetting timer");
-
 	logging(__FILE__,__FUNCTION__,__LINE__,"Resetting Timer");
 
 	tv->tv_sec = conf->timeout;
@@ -97,7 +91,7 @@ void logging(const char *file, const char *func, int line, const char *message) 
 	struct_time = gmtime( &current_time);
 
 	if (conf->log_fd) {
-		fprintf(conf->log_fd,"%d-%02d-%d %02d-%02d-%02d file:%s line:%i func:%s  :%s",
+		fprintf(conf->log_fd,"%d-%02d-%d %02d-%02d-%02d file:%s %s:%i  :%s",
 		struct_time->tm_year+1900,
 		struct_time->tm_mon+1,
 		struct_time->tm_mday,
@@ -105,19 +99,30 @@ void logging(const char *file, const char *func, int line, const char *message) 
 		struct_time->tm_min,
 		struct_time->tm_sec,
 		file,
-		line,
 		func,
+		line,
 		message);
 
 	fflush(conf->log_fd);
 }
+
+	if (conf->verbose) {
+		fprintf(stdout,"%d-%02d-%d %02d-%02d-%02d file:%s %s:%i  :%s",
+		struct_time->tm_year+1900,
+		struct_time->tm_mon+1,
+		struct_time->tm_mday,
+		struct_time->tm_hour,
+		struct_time->tm_min,
+		struct_time->tm_sec,
+		file,
+		func,
+		line,
+		message);
+	}
 }
 
 /* Root is required to capture device input */
 bool rootCheck() {
-
-	if (conf->verbose)
-		printf("Checking for root permissions\n");
 
 	logging(__FILE__,__FUNCTION__,__LINE__,"Checking for root permissions\n");
 
@@ -171,8 +176,7 @@ int send_stop(int sockfd) {
 
 	#ifdef HAVE_WIRINGPI
 	// switch gpio pin to disable relay
-	if (conf->verbose)
-		printf("LED OFF\n");
+
 
 	logging(__FILE__,__FUNCTION__,__LINE__,"LED OFF\n");
 
@@ -181,19 +185,9 @@ int send_stop(int sockfd) {
 	#endif
 
 	if (ret < 0) {
-
 		logging(__FILE__,__FUNCTION__,__LINE__,"Error sending data!\n\t-STOP");
-
-		if(conf->verbose)
-			printf("Error sending data!\n\t-%s", STOP);
-
 	} else {
-
-		if (conf->verbose)
-			printf("success...");
-
 		logging(__FILE__,__FUNCTION__,__LINE__,"Success\n");
-
 	}
 
 	return (ret);
@@ -209,9 +203,6 @@ int send_stop(int sockfd) {
 int send_start(int sockfd) {
 	int ret;
 
-	if (conf->verbose)
-		printf("Sending start to server\n");
-
 	logging(__FILE__,__FUNCTION__,__LINE__,"Sending start to server\n");
 
 	ret = send(sockfd, PLAY, sizeof(PLAY), 0);
@@ -221,21 +212,14 @@ int send_start(int sockfd) {
 	// switch gpio pin to enable relay
 	digitalWrite(LED, ON);
 
-	if (conf->verbose)
-		printf("LED ON\n");
-
 	logging(__FILE__,__FUNCTION__,__LINE__,"LED ON\n");
 
 	#endif /* HAVE_WIRINGPI */
 
 	if (ret < 0) {
-		printf("Error sending data!\n\t-%s", PLAY);
-			logging(__FILE__,__FUNCTION__,__LINE__,"Error sending data!\n\t-PLAY\n");
+		logging(__FILE__,__FUNCTION__,__LINE__,"Error sending data!\n\t-PLAY\n");
 	} else {
-
-		if (conf->verbose)
-			printf("success...");
-			logging(__FILE__,__FUNCTION__,__LINE__,"Error sending data!\n\t-PLAY\n");
+		logging(__FILE__,__FUNCTION__,__LINE__,"success...\n");
 	}
 
 	return (ret);
@@ -251,8 +235,8 @@ int openDeviceFile(char *deviceFile) {
 	int dev_fd = open(deviceFile, O_RDONLY);
 
 	if (dev_fd == -1) {
-		perror("Could not get device\n");
-		logging(__FILE__,__FUNCTION__,__LINE__,"Could not get device\n");
+		logging(__FILE__,__FUNCTION__,__LINE__,"Could not get device : ");
+		if (conf->log_fd) { fprintf(conf->log_fd,"%s\n", strerror(errno)); }
 		return 0;
 	}
 
