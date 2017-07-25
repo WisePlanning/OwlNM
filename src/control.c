@@ -208,7 +208,10 @@ int control_run_loop() {
 
 			perror("Error reading data!\n");
 
-			logging(__FILE__,__FUNCTION__,__LINE__,"Error reading data!\n");
+			logging(__FILE__,__FUNCTION__,__LINE__,"Error reading data!");
+			if (conf->log_fd) {
+				fprintf(conf->log_fd, "%s\n", strerror(errno));
+			}
 
 			FD_ZERO(&master);
 
@@ -224,10 +227,10 @@ int control_run_loop() {
 			FD_SET(sensor_device_1, &master); // second sensor
 			FD_SET(sensor_device_2, &master); // first sensor
 
+			reset_timer(&tv);
+
 		} else if (ret == 0) {
 			/* Nothing happened */
-
-			reset_timer(&tv);
 
 			if (conf->verbose) {
 				printf("timeout\n");
@@ -239,11 +242,13 @@ int control_run_loop() {
 					printf("Stopping playback\n");
 				}
 
-				/* Send the stop signal */
-				send_stop(listen_fd);
+			/* Send the stop signal */
+			send_stop(listen_fd);
 
-				playing = FALSE;
-				end = FALSE;
+			playing = FALSE;
+			end = FALSE;
+
+			reset_timer(&tv);
 		} else {
 
 			/* Check the link with the server */
@@ -254,19 +259,21 @@ int control_run_loop() {
 				/* if disconnected, try to reconnect */
 				if (ret == 0) {
 					perror("Connection to server Lost. Reconnecting.\n");
+
 					logging(__FILE__,__FUNCTION__,__LINE__, "Connection to server Lost. Reconnecting.\n");
 					if (conf->log_fd) {
 						fprintf(conf->log_fd, "%s\n", strerror(errno));
 					}
+
 					do
 					{
 						/* reconnect */
 						shutdown(listen_fd, 2);
 
-					#ifdef HAVE_AVAHI
+						#ifdef HAVE_AVAHI
 						if (conf->avahi)
 							avahi_client();
-					#endif
+						#endif
 
 						listen_fd = get_socket();
 						sleep(5);
@@ -274,9 +281,9 @@ int control_run_loop() {
 					} while (listen_fd <= 0);
 
 					FD_ZERO(&master);
+					FD_SET(listen_fd, &master);
 					FD_SET(sensor_device_1, &master);
 					FD_SET(sensor_device_2, &master);
-					FD_SET(listen_fd, &master);
 
 					reset_timer(&tv);
 				}
@@ -284,8 +291,8 @@ int control_run_loop() {
 
 			/* loop through the sensor devices */
 			for (int i = 0; i < 2; ++i) {
-				if (FD_ISSET(fds[i], &read_set)) {
-					if ((ret = read(fds[i], &event, sizeof(input_event))) > 0) {
+				if (FD_ISSET(fds[i], &read_set)) { // if the fd is in the set
+					if ((ret = read(fds[i], &event, sizeof(input_event))) > 0) { // read from it
 						if (event.type == EV_KEY) {
 							if (event.value == KEY_PRESS) {
 								if (isShift(event.code)) {
@@ -294,7 +301,7 @@ int control_run_loop() {
 
 								char *name = getKeyText(event.code, shift_pressed);
 
-								if (strcmp(name, UNKNOWN_KEY) != 0) {
+								if (strcmp(name, UNKNOWN_KEY) != 0) { // if we can ident the key
 									if (0 == strcmp(name, ENTER)) {
 										if (!playing) {
 											if (0 > send_start(listen_fd)) {
