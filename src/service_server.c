@@ -170,8 +170,7 @@ int avahi_server() {
   if (!conf->avahi)
     exit(0);
 
-  if (conf->verbose)
-    puts("Starting Avahi broadcasting.");
+    logging(__FILE__,__FUNCTION__,__LINE__,"Starting Avahi broadcasting.");
 
   AvahiClient *client = NULL;
   int error;
