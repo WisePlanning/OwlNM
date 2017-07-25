@@ -122,7 +122,7 @@
 #define DEFAULT_VIDEO "/home/wise/Movies/main.h264"
 #define DEFAULT_LOG_FILE "_OwlNM.log"
 
-#define DEFAULT_LOG_PATH "/home/drewbell/Documents/"
+#define DEFAULT_LOG_PATH "/home/wise/"
 #define DEFAULT_SERVER "192.168.0.101"
 #define DEFAULT_PLAYER "hello_video.bin"
 
