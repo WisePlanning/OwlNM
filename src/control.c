@@ -105,9 +105,7 @@ int control_run_loop() {
 	if (conf->verbose)
 		printf("Getting sensor1 \n");
 
-	if (conf->log_fd) {
 		logging(__FILE__,__FUNCTION__,__LINE__,"Getting sensor1");
-	}
 
 	int sensor_device_1 = openDeviceFile(getSensorDeviceFileName(1));
 
@@ -120,9 +118,7 @@ int control_run_loop() {
 	if (conf->verbose)
 		printf("Getting sensor 2\n");
 
-	if (conf->log_fd) {
 		logging(__FILE__,__FUNCTION__,__LINE__,"Getting sensor2 \n");
-	}
 
 	int sensor_device_2 = openDeviceFile(getSensorDeviceFileName(2));
 
@@ -143,8 +139,8 @@ int control_run_loop() {
 
 #ifdef HAVE_WIRINGPI
 	if (wiringPiSetupGpio () == -1) {
-		fclose(conf->log_fd);
 		logging(__FILE__,__FUNCTION__,__LINE__, "Could not open GPIO\n");
+		fclose(conf->log_fd);
 		exit(EXIT_FAILURE);
 	}
 	//set the pin to output
@@ -184,6 +180,7 @@ int control_run_loop() {
 		logging(__FILE__,__FUNCTION__,__LINE__,"Server Connection Socket = ");
 		fprintf(conf->log_fd, "%d\n", listen_fd);
 	}
+
 	reset_timer(&tv);
 
 	/* Setup the select device file array */
@@ -211,9 +208,7 @@ int control_run_loop() {
 
 			perror("Error reading data!\n");
 
-			if (conf->log_fd) {
-				logging(__FILE__,__FUNCTION__,__LINE__,"Error reading data!\n");
-			}
+			logging(__FILE__,__FUNCTION__,__LINE__,"Error reading data!\n");
 
 			FD_ZERO(&master);
 
@@ -260,6 +255,9 @@ int control_run_loop() {
 				if (ret == 0) {
 					perror("Connection to server Lost. Reconnecting.\n");
 					logging(__FILE__,__FUNCTION__,__LINE__, "Connection to server Lost. Reconnecting.\n");
+					if (conf->log_fd) {
+						fprintf(conf->log_fd, "%s\n", strerror(errno));
+					}
 					do
 					{
 						/* reconnect */
