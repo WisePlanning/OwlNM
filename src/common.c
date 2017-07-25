@@ -232,7 +232,7 @@ int send_start(int sockfd) {
  * @return              the file descriptor on success, error code on failure
  */
 int openDeviceFile(char *deviceFile) {
-	int dev_fd = open(deviceFile, O_RDONLY);
+	int dev_fd = open(deviceFile, O_RDONLY | O_NONBLOCK);
 
 	if (dev_fd == -1) {
 		logging(__FILE__,__FUNCTION__,__LINE__,"Could not get device : ");

@@ -75,38 +75,40 @@ char *getSensorDeviceFileName(int position) {
  * @param bufferevent*
  * @return void
  */
-void control_read_callback(struct bufferevent *bev, void *ctx) {
-	int n;
-	char buf[BUF_SIZE];
-	char buffer[BUF_SIZE];
-	struct evbuffer *input = bufferevent_get_input(bev);
+void control_read_callback(evutil_socket_t fd, short what, void *arg) {
 
-	/* Copy all the data to a buffer */
-	while ((n = evbuffer_remove(input, buf, sizeof(buf))) > 0) {
-		strcpy(buffer, buf);
-	}
+ struct fd_state *state = arg;
+    char buf[1024];
+    int i;
+    ssize_t result;
+    while (1) {
+        result = recv(fd, buf, sizeof(buf), 0);
+        if (result <= 0)
+            break;
 
-	/* process */
-	if (strncmp(buffer, PLAY, 4) == 0) {
-		/* Start the video player */
-		if (!play_video()) {
-			logging(__FILE__,__FUNCTION__,__LINE__,"Error: ");
-			if (conf->log_fd){
-				fprintf(conf->log_fd,"%s\n", strerror(errno));
-			}
-		}
-	}
+		printf("%s",buf);
+    }
 
-	if ((strncmp(buffer, STOP, 4) == 0)) {
-		/* Kill any running video players */
-		if (!stop_video()) {
-			logging(__FILE__,__FUNCTION__,__LINE__,"Error: ");
-			if (conf->log_fd){
-				fprintf(conf->log_fd,"%s\n", strerror(errno));
-			}
-		}
-	}
+    if (result == 0) {
+    } else if (result < 0) {
+        if (errno == EAGAIN) // XXXX use evutil macro
+            return;
+        perror("recv");
+    }
 }
+
+
+/**
+ * Called on when there is data to read on the socket
+ * @param void*
+ * @param bufferevent*
+ * @return void
+ */
+void control_write_callback(struct bufferevent *bev, void *ctx) {
+
+
+}
+
 
 /**
  * Called on socket event
@@ -170,9 +172,11 @@ int control_run_loop() {
 	}
 
 	struct event_base *base;
+	struct event *sens1 = NULL;
 	struct bufferevent *bev = NULL;
 	struct bufferevent *bev1 = NULL;
 	struct bufferevent *bev2 = NULL;
+	struct timeval five_seconds = {5,0};
 	base = NULL;
 
 	/* Get the keyboard file descriptos */
@@ -240,36 +244,36 @@ int control_run_loop() {
 	}
 
 	/* socket file descriptor */
-	int listen_fd = 0;
+	// int listen_fd = 0;
 
 	/* Get  and connect a socket */
-	do {
-		listen_fd = get_socket();
-	} while (listen_fd <= 0);
+	// do {
+	// 	listen_fd = get_socket();
+	// } while (listen_fd <= 0);
 
-	logging(__FILE__,__FUNCTION__,__LINE__,"Connected\n");
+	// logging(__FILE__,__FUNCTION__,__LINE__,"Connected\n");
+
+	// /* create the socket */
+	// bev = bufferevent_socket_new(base, listen_fd, BEV_OPT_CLOSE_ON_FREE);
+
+	// if (!bev)
+	// 	exit(EXIT_FAILURE);
+	// /* set the callbacks */
+	// bufferevent_setcb(bev, NULL, control_write_callback, control_event_callback, base);
+
+	// /* enable reading */
+	// bufferevent_enable(bev, EV_WRITE | EV_PERSIST);
 
 	/* create the socket */
-	bev = bufferevent_socket_new(base, listen_fd, BEV_OPT_CLOSE_ON_FREE);
-
-	if (!bev)
-		exit(EXIT_FAILURE);
+	sens1 = event_new(base, sensor_device_1, EV_READ|EV_PERSIST, control_read_callback,(void*)base);
+	event_add(sens1, NULL);
+	// if (!bev1)
+		// exit(EXIT_FAILURE);
 	/* set the callbacks */
-	bufferevent_setcb(bev, control_read_callback, NULL, control_event_callback, base);
+	// bufferevent_setcb(bev1, control_read_callback, NULL, control_event_callback, base);
 
 	/* enable reading */
-	bufferevent_enable(bev, EV_WRITE | EV_PERSIST);
-
-	/* create the socket */
-	bev1 = bufferevent_socket_new(base, sensor_device_1, BEV_OPT_CLOSE_ON_FREE);
-
-	if (!bev1)
-		exit(EXIT_FAILURE);
-	/* set the callbacks */
-	bufferevent_setcb(bev1, control_read_callback, NULL, control_event_callback, base);
-
-	/* enable reading */
-	bufferevent_enable(bev1, EV_READ | EV_PERSIST);
+	// bufferevent_enable(bev1, EV_READ | EV_PERSIST);
 		/* create the socket */
 	// bev2 = bufferevent_socket_new(base, sensor_device_2, BEV_OPT_CLOSE_ON_FREE);
 
@@ -282,12 +286,12 @@ int control_run_loop() {
 	// bufferevent_enable(bev2, EV_READ | EV_PERSIST);
 
 	/* Start the event loop */
-	event_base_loop(base, EVLOOP_NO_EXIT_ON_EMPTY);
+	event_base_dispatch(base);
 
 	// free the stuff
-	bufferevent_free(bev);
+	// bufferevent_free(bev);
 	bufferevent_free(bev1);
-	bufferevent_free(bev2);
+	// bufferevent_free(bev2);
 
 	// free the event base
 	event_base_free(base);
