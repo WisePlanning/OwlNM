@@ -26,7 +26,8 @@ pid_t play_video () {
 	status = posix_spawnp(&pid, "/bin/sh", NULL, NULL, arg, environ);
 
 	if (status < 0)
-		perror("Error");
+		logging(__FILE__, __FUNCTION__, __LINE__, "ERROR: Couldn't start playback.");
+
 	else
 		conf->playing = TRUE;
 
@@ -42,7 +43,8 @@ int stop_video () {
 	char kill_string[100];
 
   if (conf->verbose)
-		puts("Kill");
+	       logging(__FILE__, __FUNCTION__, __LINE__, "KILL\n");
+
 
   /* clear the memory */
 	memset(&kill_string, 0, sizeof(char) * 100);

@@ -119,8 +119,7 @@ Config *read_conf_file(Config *settings, Config *cli_flags) {
   char var[50];
 
   if ((access(cli_flags->config_file, R_OK) == -1)) {
-    if (conf->verbose)
-      puts("\nConfig file does not exist\nUsing defaults.");
+       logging(__FILE__, __FUNCTION__, __LINE__, "Config file does not exist\nUsing defaults.");
     return NULL;
   }
 
@@ -193,7 +192,8 @@ Config *read_conf_file(Config *settings, Config *cli_flags) {
     }
     fclose(fp);
   } else {
-    puts("unable to open config file");
+       logging(__FILE__, __FUNCTION__, __LINE__, "Unable to open config file.");
+
     /* error processing, couldn't open file */
   }
   return tmp;
@@ -463,11 +463,6 @@ Config *read_cli_inputs(int argc, char *argv[]) {
     }
   }
 
-  /* Instead of reporting  E-verbose E
-     and  E-brief Eas they are encountered,
-     we report the final status resulting from them. */
-  if (conf->verbose)
-    puts("verbose flag is set");
 
   /* Print any remaining command line arguments (not options). */
   if (optind < argc) {
