@@ -2,7 +2,9 @@
 #define __common_h_
 
 #include "config.h"
+#include <stdarg.h>
 
+extern int Myprintf(const char *fmt, ...);
 /* set socket to non-blocking */
 // extern void set_nonblocking(int socket);
 

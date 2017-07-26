@@ -12,6 +12,8 @@
  */
 int main(int argc, char *argv[]) {
 
+
+  Myprintf("%s", "testing");
   conf = NULL;
 
   /* Cli configuration struct */

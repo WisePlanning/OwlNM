@@ -54,6 +54,15 @@ int get_socket() {
   return (sockfd > 0 ? sockfd : -1);
 }
 
+
+int Myprintf(const char *fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    int rc = vfprintf(stdout, fmt, args);
+    va_end(args);
+    return rc;
+}
 /**
  * Set the socket to non-blocking
  * @method set_nonblocking
