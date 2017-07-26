@@ -191,7 +191,7 @@ int avahi_client() {
   if (!conf->avahi)
     return 0;
 
-  logging(__FILENAME__,__FUNCTION__,__LINE__,"Starting Avahi client.");
+  LOG_WRITE("Starting Avahi client.");
 
   AvahiClient *client = NULL;
   AvahiServiceBrowser *sb = NULL;
