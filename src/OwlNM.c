@@ -12,11 +12,13 @@
  */
 int main(int argc, char *argv[]) {
 
+  conf = NULL;
+
   /* Cli configuration struct */
-  Config *cli_flags;
+  Config *cli_flags = NULL;
 
   /* Conf file struct */
-  Config *conf_file;
+  Config *conf_file = NULL;
 
   /* Clear the global conf */
   conf = clear_config(conf);

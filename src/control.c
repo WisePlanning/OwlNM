@@ -95,6 +95,16 @@ void sensor1_read_callback(evutil_socket_t fd, short what, void *arg) {
 			logging(__FILE__, __FUNCTION__, __LINE__, "Sending Stop");
 
 			evbuffer_add_printf(bufferevent_get_output(tmp->buf_ev), "%s", STOP);
+
+			#ifdef HAVE_WIRINGPI
+			// switch gpio pin to disable relay
+
+			logging(__FILE__, __FUNCTION__, __LINE__, "LED OFF");
+
+			digitalWrite(LED, OFF);
+
+			#endif
+
 			playing = FALSE;
 		}
 
@@ -105,7 +115,6 @@ void sensor1_read_callback(evutil_socket_t fd, short what, void *arg) {
 	sensor1_timedout = FALSE;
 	int ret;
 	input_event event;
-	uint8_t shift_pressed = 0;
 	if ((ret = read(fd, &event, sizeof(input_event))) > 0) { // read from it
 		if (event.type == EV_KEY) {
 			if (event.value == KEY_PRESS) {
@@ -119,6 +128,16 @@ void sensor1_read_callback(evutil_socket_t fd, short what, void *arg) {
 						logging(__FILE__, __FUNCTION__, __LINE__, "Sending Play");
 
 						evbuffer_add_printf(bufferevent_get_output(tmp->buf_ev), "%s", PLAY);
+
+						#ifdef HAVE_WIRINGPI
+						// switch gpio pin to disable relay
+
+						logging(__FILE__, __FUNCTION__, __LINE__, "LED OFF");
+
+						digitalWrite(LED, ON);
+
+						#endif
+
 						playing = TRUE;
 					}
 				}
@@ -144,6 +163,16 @@ void sensor2_read_callback(evutil_socket_t fd, short what, void *arg) {
 			logging(__FILE__, __FUNCTION__, __LINE__, "Sending Stop");
 
 			evbuffer_add_printf(bufferevent_get_output(tmp->buf_ev), "%s", STOP);
+
+			#ifdef HAVE_WIRINGPI
+			// switch gpio pin to disable relay
+
+			logging(__FILE__, __FUNCTION__, __LINE__, "LED OFF");
+
+			digitalWrite(LED, OFF);
+
+			#endif
+
 			playing = FALSE;
 		}
 
@@ -154,11 +183,9 @@ void sensor2_read_callback(evutil_socket_t fd, short what, void *arg) {
 
 	int ret;
 	input_event event;
-	uint8_t shift_pressed = 0;
 	if ((ret = read(fd, &event, sizeof(input_event))) > 0) { // read from it
 		if (event.type == EV_KEY) {
 			if (event.value == KEY_PRESS) {
-
 
 				char *name = getKeyText(event.code, 0);
 
@@ -169,6 +196,16 @@ void sensor2_read_callback(evutil_socket_t fd, short what, void *arg) {
 						logging(__FILE__, __FUNCTION__, __LINE__, "Sending PLAY");
 
 						evbuffer_add_printf(bufferevent_get_output(tmp->buf_ev), "%s", PLAY);
+
+						#ifdef HAVE_WIRINGPI
+						// switch gpio pin to disable relay
+
+						logging(__FILE__, __FUNCTION__, __LINE__, "LED OFF");
+
+						digitalWrite(LED, ON);
+
+						#endif
+
 						playing = TRUE;
 					}
 				}
@@ -247,9 +284,11 @@ int control_run_loop() {
 	struct event_base *base;
 
 	/* Sensor 1 */
+	int sensor_device_1 = 0;
 	struct event *sens1 = NULL;
 
 	/* Sensor 2 */
+	int sensor_device_2 = 0;
 	struct event *sens2 = NULL;
 
 	/* Server connection */
@@ -262,7 +301,7 @@ int control_run_loop() {
 	/* Get the keyboard file descriptos */
 	logging(__FILE__, __FUNCTION__, __LINE__, "Getting sensor 1");
 
-	int sensor_device_1 = openDeviceFile(getSensorDeviceFileName(1));
+	sensor_device_1 = openDeviceFile(getSensorDeviceFileName(1));
 
 	logging(__FILE__, __FUNCTION__, __LINE__, "Sensor 1 = ");
 
@@ -270,19 +309,19 @@ int control_run_loop() {
 		fprintf(conf->log_fd, "%d", sensor_device_1);
 	}
 
-// /* Get the keyboard file descriptos */
-// logging(__FILE__,__FUNCTION__,__LINE__,"Getting sensor2 ");
-// int sensor_device_2 = openDeviceFile(getSensorDeviceFileName(2));
+/* Get the keyboard file descriptos */
+logging(__FILE__,__FUNCTION__,__LINE__,"Getting sensor2 ");
+sensor_device_2 = openDeviceFile(getSensorDeviceFileName(2));
 
-// logging(__FILE__,__FUNCTION__,__LINE__,"Sensor 2 = ");
-// if (conf->log_fd) {fprintf(conf->log_fd, "%d", sensor_device_2);}
+logging(__FILE__,__FUNCTION__,__LINE__,"Sensor 2 = ");
+if (conf->log_fd) {fprintf(conf->log_fd, "%d", sensor_device_2);}
 
-// if (!(sensor_device_1 > 0) || !(sensor_device_2 > 0)) {
-//  logging(__FILE__,__FUNCTION__,__LINE__, "Could not get sensors : ");
-//  if (conf->log_fd) {fprintf(conf->log_fd, "%s", strerror(errno));}
-//  if (conf->log_fd) {fclose(conf->log_fd);}
-//  exit(EXIT_FAILURE);
-// }
+if (!(sensor_device_1 > 0) || !(sensor_device_2 > 0)) {
+ logging(__FILE__,__FUNCTION__,__LINE__, "Could not get sensors : ");
+ if (conf->log_fd) {fprintf(conf->log_fd, "%s", strerror(errno));}
+ if (conf->log_fd) {fclose(conf->log_fd);}
+ exit(EXIT_FAILURE);
+}
 
 #ifdef HAVE_WIRINGPI
 	if (wiringPiSetupGpio() == -1) {
@@ -374,10 +413,9 @@ int control_run_loop() {
 
 	event_add(sens1, &event_timer);
 
-	// sens2 = event_new(base, sensor_device_2, EV_TIMEOUT | EV_READ | EV_PERSIST,
-	//                   sensor2_read_callback, (void *)server);
+	sens2 = event_new(base, sensor_device_2, EV_TIMEOUT | EV_READ | EV_PERSIST, sensor2_read_callback, (void *)server);
 
-	// event_add(sens2, &event_timer);
+	event_add(sens2, &event_timer);
 
 	/* Start the event loop */
 	event_base_loop(base, EVLOOP_NO_EXIT_ON_EMPTY);
@@ -394,7 +432,7 @@ int control_run_loop() {
 
 	/* Close file descriptors */
 	close(sensor_device_1);
-	close(sensor_device_2);
+	// close(sensor_device_2);
 	close(listen_fd);
 
 	// exit

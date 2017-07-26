@@ -1,5 +1,4 @@
 #include "config.h"
-
 /**
  * print usage description]
  * @method print_usage
@@ -66,8 +65,10 @@ void log_config(Config *co) {
  * @return              Config struct pointer (malloced)
  */
 Config *clear_config(Config *in) {
-  if (in != NULL)
+  if (in != NULL) {
     free_config(in);
+    free(in);
+  }
 
   /* create a new malloc'd struct */
   in = malloc(sizeof(Config));
@@ -92,26 +93,15 @@ Config *clear_config(Config *in) {
  * @param  input       Config struct pointer
  */
 void free_config(Config *input) {
-  if (input == NULL)
-    return;
-
-  if (NULL != input->port)
-    free(input->port);
-  if (NULL != input->video_file)
-    free(input->video_file);
-  if (NULL != input->video_player)
-    free(input->video_player);
-  if (NULL != input->config_file)
-    free(input->config_file);
-  if (NULL != input->log_name)
-    free(input->log_name);
-      if (NULL != input->log_path)
-    free(input->log_path);
-  if (NULL != input->server_address)
-    free(input->server_address);
-
-  free(input);
-
+  if (input != NULL) {
+    if (NULL != input->port) free(input->port);
+    if (NULL != input->video_file) free(input->video_file);
+    if (NULL != input->video_player) free(input->video_player);
+    if (NULL != input->config_file) free(input->config_file);
+    if (NULL != input->log_name) free(input->log_name);
+    if (NULL != input->log_path) free(input->log_path);
+    if (NULL != input->server_address) free(input->server_address);
+  }
   return;
 }
 

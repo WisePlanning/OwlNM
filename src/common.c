@@ -59,27 +59,27 @@ int get_socket() {
  * @method set_nonblocking
  * @param  socket          [socket file descriptor]
  */
-void set_nonblocking(int socket) {
-  int flags;
+// void set_nonblocking(int socket) {
+//   int flags;
 
-  flags = fcntl(socket, F_GETFL, 0);
-  if (flags != -1) {
-    fcntl(socket, F_SETFL, flags | O_NONBLOCK);
-  }
-}
+//   flags = fcntl(socket, F_GETFL, 0);
+//   if (flags != -1) {
+//     fcntl(socket, F_SETFL, flags | O_NONBLOCK);
+//   }
+// }
 
 /**
  * Provide a reset timer
  * @method reset_timer
  * @param  tv          [description]
- */
-void reset_timer(struct timeval *tv) {
+//  */
+// void reset_timer(struct timeval *tv) {
 
-  logging(__FILE__, __FUNCTION__, __LINE__, "Resetting Timer");
+//   logging(__FILE__, __FUNCTION__, __LINE__, "Resetting Timer");
 
-  tv->tv_sec = conf->timeout;
-  tv->tv_usec = UTIMEOUT;
-}
+//   tv->tv_sec = conf->timeout;
+//   tv->tv_usec = UTIMEOUT;
+// }
 
 void logging(const char *file, const char *func, int line,
              const char *message) {
@@ -230,7 +230,7 @@ int openDeviceFile(char *deviceFile) {
     }
     return 0;
   }
-
+  free(deviceFile);
   return (dev_fd);
 } /* openKeyboardDeviceFile */
 
@@ -255,13 +255,13 @@ void stoupper(char s[]) {
  * @method stolower
  * @param  s
  */
-void stolower(char s[]) {
-  int c = 0;
+// void stolower(char s[]) {
+//   int c = 0;
 
-  while (s[c] != '\0') {
-    if (s[c] >= 'A' && s[c] <= 'Z') {
-      s[c] = s[c] + 32;
-    }
-    ++c;
-  }
-}
+//   while (s[c] != '\0') {
+//     if (s[c] >= 'A' && s[c] <= 'Z') {
+//       s[c] = s[c] + 32;
+//     }
+//     ++c;
+//   }
+// }
