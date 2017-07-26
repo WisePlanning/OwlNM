@@ -26,6 +26,7 @@
 #include <syslog.h>
 #include <unistd.h>
 #include <time.h>
+#include <stdarg.h>
 
 /* Input events */
 #cmakedefine HAVE_BSD_INPUT
@@ -142,6 +143,8 @@ typedef enum MODE_ENUM { FOREACH_MODE(GENERATE_ENUM) } MODE;
 static const char *MODE_STRING[] = {FOREACH_MODE(GENERATE_STRING)};
 
 typedef struct input_event input_event;
+
+#define LOG_WRITE(fmt, ...)   write_log(__FILE__, __FUNCTION__, __LINE__, fmt,##__VA_ARGS__)
 
 /* Config struct */
 typedef struct config_obj {
