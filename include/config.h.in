@@ -137,6 +137,8 @@
 #define GENERATE_ENUM(ENUM) ENUM,
 #define GENERATE_STRING(STRING) #STRING,
 
+#define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
+
 typedef enum MODE_ENUM { FOREACH_MODE(GENERATE_ENUM) } MODE;
 
 static const char *MODE_STRING[] = {FOREACH_MODE(GENERATE_STRING)};

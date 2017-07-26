@@ -21,7 +21,7 @@ int get_socket() {
 
   if ((status = getaddrinfo(conf->server_address, conf->port, &hints, &res)) !=
       0) {
-    logging(__FILE__, __FUNCTION__, __LINE__, "ERROR: getaddrinfo");
+    logging(__FILENAME__, __FUNCTION__, __LINE__, "ERROR: getaddrinfo");
     if (conf->log_fd) {
       fprintf(conf->log_fd, "%s", strerror(errno));
     }
@@ -31,7 +31,7 @@ int get_socket() {
   /* loop through all the results and connect to the first we can */
   for (p = res; p != NULL; p = p->ai_next) {
     if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
-      logging(__FILE__, __FUNCTION__, __LINE__, "ERROR: socket");
+      logging(__FILENAME__, __FUNCTION__, __LINE__, "ERROR: socket");
       if (conf->log_fd) {
         fprintf(conf->log_fd, "%s", strerror(errno));
       }
@@ -39,7 +39,7 @@ int get_socket() {
     }
 
     if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
-      logging(__FILE__, __FUNCTION__, __LINE__, "ERROR: connect");
+      logging(__FILENAME__, __FUNCTION__, __LINE__, "ERROR: connect");
       if (conf->log_fd) {
         fprintf(conf->log_fd, "%s", strerror(errno));
       }
@@ -87,7 +87,7 @@ void logging(const char *file, const char *func, int line,
 /* Root is required to capture device input */
 bool rootCheck() {
 
-  logging(__FILE__, __FUNCTION__, __LINE__, "Checking for root permissions");
+  logging(__FILENAME__, __FUNCTION__, __LINE__, "Checking for root permissions");
 
   if (geteuid() != 0) {
     return FALSE;
@@ -106,21 +106,21 @@ bool rootCheck() {
 int send_stop(int sockfd) {
   int ret;
 
-  logging(__FILE__, __FUNCTION__, __LINE__, "Sending stop to server");
+  logging(__FILENAME__, __FUNCTION__, __LINE__, "Sending stop to server");
 
   ret = send(sockfd, STOP, sizeof(STOP), 0);
 
   if (ret < 0) {
-    logging(__FILE__, __FUNCTION__, __LINE__, "Error sending data!\t-STOP");
+    logging(__FILENAME__, __FUNCTION__, __LINE__, "Error sending data!\t-STOP");
   } else {
-    logging(__FILE__, __FUNCTION__, __LINE__, "Success");
+    logging(__FILENAME__, __FUNCTION__, __LINE__, "Success");
     playing = FALSE;
   }
 
 #ifdef HAVE_WIRINGPI
   // switch gpio pin to disable relay
 
-  logging(__FILE__, __FUNCTION__, __LINE__, "LED OFF");
+  logging(__FILENAME__, __FUNCTION__, __LINE__, "LED OFF");
 
   digitalWrite(LED, OFF);
 
@@ -142,7 +142,7 @@ int openDeviceFile(char *deviceFile) {
   int dev_fd = open(deviceFile, O_RDONLY | O_NONBLOCK);
 
   if (dev_fd == -1) {
-    logging(__FILE__, __FUNCTION__, __LINE__, "Could not get device : ");
+    logging(__FILENAME__, __FUNCTION__, __LINE__, "Could not get device : ");
     if (conf->log_fd) {
       fprintf(conf->log_fd, "%s", strerror(errno));
     }
