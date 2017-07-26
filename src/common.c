@@ -105,6 +105,7 @@ void logging(const char *file, const char *func, int line,
             struct_time->tm_year + 1900, struct_time->tm_mon + 1,
             struct_time->tm_mday, struct_time->tm_hour, struct_time->tm_min,
             struct_time->tm_sec, file, func, line, message);
+                fflush(stdout);
   }
 }
 
@@ -153,8 +154,6 @@ char *get_ip_str(const struct sockaddr *sa, char *s, size_t maxlen) {
  * @return            [description]
  */
 int send_stop(int sockfd) {
-  if (!playing)
-    return 1;
   int ret;
 
   logging(__FILE__, __FUNCTION__, __LINE__, "Sending stop to server");

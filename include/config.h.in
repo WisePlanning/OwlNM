@@ -161,6 +161,8 @@ typedef struct config_obj {
 /* Global config struct */
 Config *conf;
 int playing;
+int sensor1_timedout;
+int sensor2_timedout;
 
 /* Read in the config file */
 Config *read_conf_file();
