@@ -1,5 +1,4 @@
 #include "config.h"
-
 /**
  * print usage description]
  * @method print_usage
@@ -12,6 +11,7 @@ void print_usage() {
   printf("-c : Client mode\n");
   printf("-a : Server address (If not set, will use Zeroconf to find the "
          "server)\n");
+  printf("-A : Avahi / zeroconf \n");
   printf("-t : Video Timeout (seconds)\n");
   printf("-h : help\n");
 }
@@ -24,7 +24,7 @@ void print_usage() {
 void display_config(Config *co) {
 
   if (co->server_address != FALSE) {
-    printf("Server address:\t%s\n", co->server_address);
+    printf("\nServer address:\t%s\n", co->server_address);
   }
   printf("Port:\t\t%s\n", co->port);
   printf("Mode:\t\t%s\n", MODE_STRING[co->mode]);
@@ -43,7 +43,7 @@ void display_config(Config *co) {
 void log_config(Config *co) {
 
   if (co->server_address != FALSE) {
-    fprintf(co->log_fd,"Server address:\t%s\n", co->server_address);
+    fprintf(co->log_fd,"\nServer address:\t%s\n", co->server_address);
   }
   fprintf(co->log_fd,"Port:\t\t%s\n", co->port);
   fprintf(co->log_fd,"Mode:\t\t%s\n", MODE_STRING[co->mode]);
@@ -66,8 +66,10 @@ void log_config(Config *co) {
  * @return              Config struct pointer (malloced)
  */
 Config *clear_config(Config *in) {
-  if (in != NULL)
+  if (in != NULL) {
     free_config(in);
+    free(in);
+  }
 
   /* create a new malloc'd struct */
   in = malloc(sizeof(Config));
@@ -92,26 +94,15 @@ Config *clear_config(Config *in) {
  * @param  input       Config struct pointer
  */
 void free_config(Config *input) {
-  if (input == NULL)
-    return;
-
-  if (NULL != input->port)
-    free(input->port);
-  if (NULL != input->video_file)
-    free(input->video_file);
-  if (NULL != input->video_player)
-    free(input->video_player);
-  if (NULL != input->config_file)
-    free(input->config_file);
-  if (NULL != input->log_name)
-    free(input->log_name);
-      if (NULL != input->log_path)
-    free(input->log_path);
-  if (NULL != input->server_address)
-    free(input->server_address);
-
-  free(input);
-
+  if (input != NULL) {
+    if (NULL != input->port) free(input->port);
+    if (NULL != input->video_file) free(input->video_file);
+    if (NULL != input->video_player) free(input->video_player);
+    if (NULL != input->config_file) free(input->config_file);
+    if (NULL != input->log_name) free(input->log_name);
+    if (NULL != input->log_path) free(input->log_path);
+    if (NULL != input->server_address) free(input->server_address);
+  }
   return;
 }
 

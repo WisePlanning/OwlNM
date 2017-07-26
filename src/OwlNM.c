@@ -12,11 +12,13 @@
  */
 int main(int argc, char *argv[]) {
 
+  conf = NULL;
+
   /* Cli configuration struct */
-  Config *cli_flags;
+  Config *cli_flags = NULL;
 
   /* Conf file struct */
-  Config *conf_file;
+  Config *conf_file = NULL;
 
   /* Clear the global conf */
   conf = clear_config(conf);
@@ -62,7 +64,6 @@ int main(int argc, char *argv[]) {
       control_run_loop();
     } else {
 
-      fprintf(stderr,"Controller must be run as Root\n");
       logging(__FILE__,__FUNCTION__,__LINE__,"Controller must be run as Root\n");
       free(conf);
       exit(EXIT_FAILURE);

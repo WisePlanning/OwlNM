@@ -4,10 +4,10 @@
 #include "config.h"
 
 /* set socket to non-blocking */
-extern void set_nonblocking(int socket);
+// extern void set_nonblocking(int socket);
 
 /* Reset a timer */
-extern void reset_timer(struct timeval *tv);
+// extern void reset_timer(struct timeval *tv);
 
 /* Check the program was started as root */
 extern bool rootCheck();
@@ -28,7 +28,7 @@ extern int openDeviceFile(char *deviceFile);
 extern void stoupper(char s[]);
 
 /* Convert to lowercase */
-extern void stolower(char s[]);
+// extern void stolower(char s[]);
 
 extern void logging(const char *file,const char *func ,int line, const char *message);
 

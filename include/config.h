@@ -28,15 +28,15 @@
 #include <time.h>
 
 /* Input events */
-#cmakedefine HAVE_BSD_INPUT
+/* #undef HAVE_BSD_INPUT */
 #ifdef HAVE_BSD_INPUT
 #include "/usr/src/sys/dev/evdev/input.h"
 #endif
-#cmakedefine HAVE_LINUX_INPUT
+#define HAVE_LINUX_INPUT
 #ifdef HAVE_LINUX_INPUT
 #include <linux/input.h>
 #endif
-#cmakedefine HAVE_INPUT
+/* #undef HAVE_INPUT */
 #ifdef HAVE_INPUT
 #include <input.h>
 #endif
@@ -47,7 +47,7 @@
 #endif
 
 /* Libevent. */
-#cmakedefine HAVE_LIBEVENT
+#define HAVE_LIBEVENT
 #ifdef HAVE_LIBEVENT
 /* Required by event.h. */
 
@@ -59,7 +59,7 @@
 /* Libevent. */
 
 /* Libavahi. */
-#cmakedefine HAVE_AVAHI
+#define HAVE_AVAHI
 #ifdef HAVE_AVAHI
 #include <avahi-client/client.h>
 #include <avahi-client/lookup.h>
@@ -77,7 +77,7 @@
 /* Libavahi. */
 
 /* wiringPi. */
-#cmakedefine HAVE_WIRINGPI
+/* #undef HAVE_WIRINGPI */
 #ifdef HAVE_WIRINGPI // The RPi library
 
 #include <wiringPi.h>
@@ -98,8 +98,8 @@
 #include "key_util.h"
 #include "server.h"
 #include "video.h"
-#include "OwlNM.h"
 
+#include "OwlNM.h"
 /**
  * Constants / Defaults
  */
@@ -112,8 +112,8 @@
 #define KEY_RELEASE 0
 #define KEY_PRESS 1
 
-#define MAJOR_VERSION @OwlNM_VERSION_MAJOR@
-#define MINOR_VERSION @OwlNM_VERSION_MINOR@
+#define MAJOR_VERSION 1
+#define MINOR_VERSION 0
 
 #define DEFAULT_TIMEOUT 90
 #define UTIMEOUT 0
@@ -124,7 +124,7 @@
 #define DEFAULT_VIDEO "/home/wise/Movies/main.h264"
 #define DEFAULT_LOG_FILE "_OwlNM.log"
 
-#define DEFAULT_LOG_PATH "/home/wise/"
+#define DEFAULT_LOG_PATH "/home/drewbell/"
 #define DEFAULT_SERVER "192.168.0.101"
 #define DEFAULT_PLAYER "hello_video.bin"
 
@@ -162,6 +162,7 @@ typedef struct config_obj {
 
 /* Global config struct */
 Config *conf;
+
 int playing;
 int sensor1_timedout;
 int sensor2_timedout;
@@ -189,4 +190,5 @@ void free_config(Config *input);
 
 /* Write config out to file */
 void log_config(Config *co);
+
 #endif
