@@ -54,32 +54,7 @@ int get_socket() {
   return (sockfd > 0 ? sockfd : -1);
 }
 
-/**
- * Set the socket to non-blocking
- * @method set_nonblocking
- * @param  socket          [socket file descriptor]
- */
-// void set_nonblocking(int socket) {
-//   int flags;
 
-//   flags = fcntl(socket, F_GETFL, 0);
-//   if (flags != -1) {
-//     fcntl(socket, F_SETFL, flags | O_NONBLOCK);
-//   }
-// }
-
-/**
- * Provide a reset timer
- * @method reset_timer
- * @param  tv          [description]
-//  */
-// void reset_timer(struct timeval *tv) {
-
-//   logging(__FILE__, __FUNCTION__, __LINE__, "Resetting Timer");
-
-//   tv->tv_sec = conf->timeout;
-//   tv->tv_usec = UTIMEOUT;
-// }
 
 void logging(const char *file, const char *func, int line,
              const char *message) {
@@ -120,31 +95,6 @@ bool rootCheck() {
   return TRUE;
 }
 
-/**
- * [get_ip_str description]
- * @method get_ip_str
- * @param  sa         [description]
- * @param  s          [description]
- * @param  maxlen     [description]
- * @return            [description]
- */
-// char *get_ip_str(const struct sockaddr *sa, char *s, size_t maxlen) {
-//   switch (sa->sa_family) {
-//   case AF_INET:
-//     inet_ntop(AF_INET, &(((struct sockaddr_in *)sa)->sin_addr), s, maxlen);
-//     break;
-
-//   case AF_INET6:
-//     inet_ntop(AF_INET6, &(((struct sockaddr_in6 *)sa)->sin6_addr), s, maxlen);
-//     break;
-
-//   default:
-//     strncpy(s, "Unknown AF", maxlen);
-//     return NULL;
-//   }
-
-//   return s;
-// }
 
 /**
  * Send the stop signal to the server
@@ -178,41 +128,6 @@ int send_stop(int sockfd) {
 
   return (ret);
 }
-
-/**
- * Send the start signal to the server
- * @method start_video
- * @param  addr        [description]
- * @param  sockfd      [description]
- * @return             [description]
- */
-// int send_start(int sockfd) {
-//   if (playing)
-//     return 0;
-//   int ret;
-
-//   logging(__FILE__, __FUNCTION__, __LINE__, "Sending start to server");
-
-//   ret = send(sockfd, PLAY, sizeof(PLAY), 0);
-
-//   if (ret < 0) {
-//     logging(__FILE__, __FUNCTION__, __LINE__, "Error sending data!\t-PLAY");
-//   } else {
-//     logging(__FILE__, __FUNCTION__, __LINE__, "success...");
-//     playing = TRUE;
-//   }
-
-// #ifdef HAVE_WIRINGPI
-
-//   // switch gpio pin to enable relay
-//   digitalWrite(LED, ON);
-
-//   logging(__FILE__, __FUNCTION__, __LINE__, "LED ON");
-
-// #endif /* HAVE_WIRINGPI */
-
-//   return (ret);
-// }
 
 /**
  * Opens the keyboard device file
@@ -252,19 +167,3 @@ void stoupper(char s[]) {
     ++c;
   }
 }
-
-/**
- * convert case to lower inplace
- * @method stolower
- * @param  s
- */
-// void stolower(char s[]) {
-//   int c = 0;
-
-//   while (s[c] != '\0') {
-//     if (s[c] >= 'A' && s[c] <= 'Z') {
-//       s[c] = s[c] + 32;
-//     }
-//     ++c;
-//   }
-// }
