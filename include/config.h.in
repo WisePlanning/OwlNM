@@ -136,8 +136,7 @@
 
 #define GENERATE_ENUM(ENUM) ENUM,
 #define GENERATE_STRING(STRING) #STRING,
-
-#define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
+#define __FILENAME__ (__FILE__ + SOURCE_PATH_SIZE)
 
 typedef enum MODE_ENUM { FOREACH_MODE(GENERATE_ENUM) } MODE;
 
