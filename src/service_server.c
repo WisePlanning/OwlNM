@@ -78,11 +78,6 @@ static void create_services(AvahiClient *c) {
     /* Create some random TXT data */
     snprintf(r, sizeof(r), "random=%i", rand());
 
-    /* We will now add two services and one subtype to the entry
-     * group. The two services have the same name, but differ in
-     * the service type (IPP vs. BSD LPR). Only services with the
-     * same name should be put in the same entry group. */
-
     /* Add the service for server */
     if ((ret = avahi_entry_group_add_service(
              group, AVAHI_IF_UNSPEC, AVAHI_PROTO_INET, 0, name, SERVICE_NAME,
