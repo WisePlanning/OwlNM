@@ -85,7 +85,7 @@ static void create_services(AvahiClient *c) {
 
     /* Add the service for server */
     if ((ret = avahi_entry_group_add_service(
-             group, AVAHI_IF_UNSPEC, AVAHI_PROTO_UNSPEC, 0, name, SERVICE_NAME,
+             group, AVAHI_IF_UNSPEC, AVAHI_PROTO_INET, 0, name, SERVICE_NAME,
              NULL, NULL, atoi(conf->port), "Media Control Server", r, NULL)) <
         0) {
       if (ret == AVAHI_ERR_COLLISION)
