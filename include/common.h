@@ -6,9 +6,6 @@
 /* Check the program was started as root */
 extern bool rootCheck();
 
-/* send a start signal to a socket */
-extern int send_start(int sockfd);
-
 /* send the stop signal to a socket */
 extern int send_stop(int sockfd);
 

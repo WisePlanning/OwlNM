@@ -43,20 +43,20 @@ void display_config(Config *co) {
 void log_config(Config *co) {
 
   if (co->server_address != FALSE) {
-    fprintf(co->log_fd,"\nServer address:\t%s\n", co->server_address);
+    LOG_WRITE("\nServer address:\t%s\n", co->server_address);
   }
-  fprintf(co->log_fd,"Port:\t\t%s\n", co->port);
-  fprintf(co->log_fd,"Mode:\t\t%s\n", MODE_STRING[co->mode]);
-  fprintf(co->log_fd,"Video timeout:\t%d\n", co->timeout);
-  fprintf(co->log_fd,"Video file:\t%s\n", co->video_file);
-  fprintf(co->log_fd,"Config file:\t%s\n", co->config_file);
-  fprintf(co->log_fd,"Log file:\t%s\n", co->log_name);
+  LOG_WRITE("Port:\t\t%s\n", co->port);
+  LOG_WRITE("Mode:\t\t%s\n", MODE_STRING[co->mode]);
+  LOG_WRITE("Video timeout:\t%d\n", co->timeout);
+  LOG_WRITE("Video file:\t%s\n", co->video_file);
+  LOG_WRITE("Config file:\t%s\n", co->config_file);
+  LOG_WRITE("Log file:\t%s\n", co->log_name);
 
   if (co->avahi)
-   fprintf(co->log_fd,"Use Avahi:\tTrue\n");
+   LOG_WRITE("Use Avahi:\tTrue\n");
   else
-    fprintf(co->log_fd,"Use Avahi:\tFalse\n");
-  fflush(co->log_fd);
+    LOG_WRITE("Use Avahi:\tFalse\n");
+
 }
 
 /**

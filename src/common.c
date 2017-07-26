@@ -23,11 +23,8 @@ int get_socket()
   if ((status = getaddrinfo(conf->server_address, conf->port, &hints, &res)) !=
       0)
   {
-    LOG_WRITE(__FILE__, __FUNCTION__, __LINE__, "ERROR: getaddrinfo");
-    if (conf->log_fd)
-    {
-      fprintf(conf->log_fd, "%s", strerror(errno));
-    }
+    LOG_WRITE("ERROR: getaddrinfo : %s\n", strerror(errno));
+
     return -1;
   }
 
@@ -36,21 +33,15 @@ int get_socket()
   {
     if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1)
     {
-      LOG_WRITE(__FILE__, __FUNCTION__, __LINE__, "ERROR: socket");
-      if (conf->log_fd)
-      {
-        fprintf(conf->log_fd, "%s", strerror(errno));
-      }
+      LOG_WRITE("ERROR: socket : %s\n", strerror(errno));
+
       continue;
     }
 
     if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1)
     {
-      LOG_WRITE(__FILE__, __FUNCTION__, __LINE__, "ERROR: connect");
-      if (conf->log_fd)
-      {
-        fprintf(conf->log_fd, "%s", strerror(errno));
-      }
+      LOG_WRITE("ERROR: connect : %s\n", strerror(errno));
+
       close(sockfd);
       continue;
     }
@@ -62,8 +53,12 @@ int get_socket()
   return (sockfd > 0 ? sockfd : -1);
 }
 
-void logging(const char *file, const char *func, int line,
-             const char *message)
+/**
+*
+*
+*
+*/
+int write_log(const char *file, const char *function, int line, const char *format, ...)
 {
 
   time_t current_time;
@@ -73,24 +68,28 @@ void logging(const char *file, const char *func, int line,
 
   struct_time = gmtime(&current_time);
 
+  va_list arg;
+  int rv=0;
   if (conf->log_fd)
   {
-    fprintf(conf->log_fd, "\n%d-%02d-%d %02d-%02d-%02d file:%s %s:%i  :%s",
+    va_start(arg, format);
+    fprintf(conf->log_fd, "%d-%02d-%d %02d-%02d-%02d: ",
             struct_time->tm_year + 1900, struct_time->tm_mon + 1,
             struct_time->tm_mday, struct_time->tm_hour, struct_time->tm_min,
-            struct_time->tm_sec, file, func, line, message);
-
+            struct_time->tm_sec);
+    fprintf(conf->log_fd, "file:%s func:%s line %d:", file, function, line);
+    rv = vfprintf(conf->log_fd, format, arg);
+    va_end(arg);
     fflush(conf->log_fd);
   }
 
   if (conf->verbose)
   {
-    fprintf(stdout, "\n%d-%02d-%d %02d-%02d-%02d file:%s %s:%i  :%s",
-            struct_time->tm_year + 1900, struct_time->tm_mon + 1,
-            struct_time->tm_mday, struct_time->tm_hour, struct_time->tm_min,
-            struct_time->tm_sec, file, func, line, message);
-    fflush(stdout);
+    va_start(arg, format);
+    vprintf(format, arg);
+    va_end(arg);
   }
+  return rv;
 }
 
 int write_log(const char *file, const char *function, int line, const char *format, ...)
@@ -130,7 +129,7 @@ int write_log(const char *file, const char *function, int line, const char *form
 bool rootCheck()
 {
 
-  LOG_WRITE(__FILE__, __FUNCTION__, __LINE__, "Checking for root permissions");
+  LOG_WRITE("Checking for root permissions\n");
 
   if (geteuid() != 0)
   {
@@ -150,24 +149,24 @@ int send_stop(int sockfd)
 {
   int ret;
 
-  logging(__FILE__, __FUNCTION__, __LINE__, "Sending stop to server");
+  LOG_WRITE("Sending stop to server\n");
 
   ret = send(sockfd, STOP, sizeof(STOP), 0);
 
   if (ret < 0)
   {
-    LOG_WRITE(__FILE__, __FUNCTION__, __LINE__, "Error sending data!\t-STOP");
+    LOG_WRITE("Error sending data!\t-STOP\n");
   }
   else
   {
-    LOG_WRITE(__FILE__, __FUNCTION__, __LINE__, "Success");
+    LOG_WRITE("Success: Stop sent to server\n");
     playing = FALSE;
   }
 
 #ifdef HAVE_WIRINGPI
   // switch gpio pin to disable relay
 
-  LOG_WRITE(__FILE__, __FUNCTION__, __LINE__, "LED OFF");
+  LOG_WRITE("LED OFF\n");
 
   digitalWrite(LED, OFF);
 
@@ -191,13 +190,10 @@ int openDeviceFile(char *deviceFile)
 
   if (dev_fd == -1)
   {
-    LOG_WRITE(__FILE__, __FUNCTION__, __LINE__, "Could not get device : ");
-    if (conf->log_fd)
-    {
-      fprintf(conf->log_fd, "%s", strerror(errno));
-    }
+    LOG_WRITE("Could not get device :%s\n", strerror(errno));
     return 0;
   }
+
   free(deviceFile);
   return (dev_fd);
 } /* openKeyboardDeviceFile */

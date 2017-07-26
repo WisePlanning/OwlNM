@@ -125,7 +125,7 @@
 #define DEFAULT_VIDEO "/home/wise/Movies/main.h264"
 #define DEFAULT_LOG_FILE "_OwlNM.log"
 
-#define DEFAULT_LOG_PATH "/home/wise/"
+#define DEFAULT_LOG_PATH "/home/drewbell/"
 #define DEFAULT_SERVER "192.168.0.101"
 #define DEFAULT_PLAYER "hello_video.bin"
 
@@ -137,6 +137,9 @@
 
 #define GENERATE_ENUM(ENUM) ENUM,
 #define GENERATE_STRING(STRING) #STRING,
+#define LOG_WRITE(fmt, ...)   write_log(__FILENAME__, __FUNCTION__, __LINE__, fmt,##__VA_ARGS__)
+
+#define __FILENAME__ (__FILE__ + SOURCE_PATH_SIZE)
 
 typedef enum MODE_ENUM { FOREACH_MODE(GENERATE_ENUM) } MODE;
 

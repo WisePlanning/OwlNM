@@ -63,7 +63,7 @@ int main(int argc, char *argv[]) {
       control_run_loop();
     } else {
 
-      logging(__FILE__,__FUNCTION__,__LINE__,"Controller must be run as Root\n");
+      LOG_WRITE("Controller must be run as Root\n");
       free(conf);
       exit(EXIT_FAILURE);
     }
