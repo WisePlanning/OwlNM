@@ -11,6 +11,7 @@ void print_usage() {
   printf("-c : Client mode\n");
   printf("-a : Server address (If not set, will use Zeroconf to find the "
          "server)\n");
+  printf("-A : Avahi / zeroconf \n");
   printf("-t : Video Timeout (seconds)\n");
   printf("-h : help\n");
 }
@@ -23,7 +24,7 @@ void print_usage() {
 void display_config(Config *co) {
 
   if (co->server_address != FALSE) {
-    printf("Server address:\t%s\n", co->server_address);
+    printf("\nServer address:\t%s\n", co->server_address);
   }
   printf("Port:\t\t%s\n", co->port);
   printf("Mode:\t\t%s\n", MODE_STRING[co->mode]);
@@ -42,7 +43,7 @@ void display_config(Config *co) {
 void log_config(Config *co) {
 
   if (co->server_address != FALSE) {
-    fprintf(co->log_fd,"Server address:\t%s\n", co->server_address);
+    fprintf(co->log_fd,"\nServer address:\t%s\n", co->server_address);
   }
   fprintf(co->log_fd,"Port:\t\t%s\n", co->port);
   fprintf(co->log_fd,"Mode:\t\t%s\n", MODE_STRING[co->mode]);

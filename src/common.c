@@ -221,6 +221,9 @@ int send_stop(int sockfd) {
  * @return              the file descriptor on success, error code on failure
  */
 int openDeviceFile(char *deviceFile) {
+  if (!deviceFile)
+  return 0;
+
   int dev_fd = open(deviceFile, O_RDONLY | O_NONBLOCK);
 
   if (dev_fd == -1) {

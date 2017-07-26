@@ -55,22 +55,27 @@ char *getSensorDeviceFileName(int position) {
 
 	if (strlen(buff) > 0) {
 		// Assumes the length of the device name is 6 chars long
+
 		// copy the first device name
 		strncpy(sensor_device_1, buff, 6);
 		logging(__FILE__, __FUNCTION__, __LINE__, sensor_device_1);
 
 		// copy the second device name
-		strncpy(sensor_device_2, &buff[6], 6);
-		logging(__FILE__, __FUNCTION__, __LINE__, sensor_device_2);
+		if (strlen(buff) > 6) {
+			strncpy(sensor_device_2, &buff[6], 6);
+			logging(__FILE__, __FUNCTION__, __LINE__, sensor_device_2);
+		}
 	} else {
 		return 0;
 	}
 
 	/* return the sensor device */
 	if (position == 1) {
-		return (strdup(strcat(path_prefix, sensor_device_1)));
+		if (strlen(sensor_device_1) > 1)
+			return (strdup(strcat(path_prefix, sensor_device_1)));
 	} else if (position == 2) {
-		return (strdup(strcat(path_prefix, sensor_device_2)));
+		if (strlen(sensor_device_2) > 1)
+			return (strdup(strcat(path_prefix, sensor_device_2)));
 	}
 
 	return 0;
