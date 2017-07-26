@@ -1,5 +1,5 @@
 #include "common.h"
-#include <time.h>
+
 /**
  * Get a socket descriptor
  * @method get_socket
@@ -128,23 +128,23 @@ bool rootCheck() {
  * @param  maxlen     [description]
  * @return            [description]
  */
-char *get_ip_str(const struct sockaddr *sa, char *s, size_t maxlen) {
-  switch (sa->sa_family) {
-  case AF_INET:
-    inet_ntop(AF_INET, &(((struct sockaddr_in *)sa)->sin_addr), s, maxlen);
-    break;
+// char *get_ip_str(const struct sockaddr *sa, char *s, size_t maxlen) {
+//   switch (sa->sa_family) {
+//   case AF_INET:
+//     inet_ntop(AF_INET, &(((struct sockaddr_in *)sa)->sin_addr), s, maxlen);
+//     break;
 
-  case AF_INET6:
-    inet_ntop(AF_INET6, &(((struct sockaddr_in6 *)sa)->sin6_addr), s, maxlen);
-    break;
+//   case AF_INET6:
+//     inet_ntop(AF_INET6, &(((struct sockaddr_in6 *)sa)->sin6_addr), s, maxlen);
+//     break;
 
-  default:
-    strncpy(s, "Unknown AF", maxlen);
-    return NULL;
-  }
+//   default:
+//     strncpy(s, "Unknown AF", maxlen);
+//     return NULL;
+//   }
 
-  return s;
-}
+//   return s;
+// }
 
 /**
  * Send the stop signal to the server
@@ -186,33 +186,33 @@ int send_stop(int sockfd) {
  * @param  sockfd      [description]
  * @return             [description]
  */
-int send_start(int sockfd) {
-  if (playing)
-    return 0;
-  int ret;
+// int send_start(int sockfd) {
+//   if (playing)
+//     return 0;
+//   int ret;
 
-  logging(__FILE__, __FUNCTION__, __LINE__, "Sending start to server");
+//   logging(__FILE__, __FUNCTION__, __LINE__, "Sending start to server");
 
-  ret = send(sockfd, PLAY, sizeof(PLAY), 0);
+//   ret = send(sockfd, PLAY, sizeof(PLAY), 0);
 
-  if (ret < 0) {
-    logging(__FILE__, __FUNCTION__, __LINE__, "Error sending data!\t-PLAY");
-  } else {
-    logging(__FILE__, __FUNCTION__, __LINE__, "success...");
-    playing = TRUE;
-  }
+//   if (ret < 0) {
+//     logging(__FILE__, __FUNCTION__, __LINE__, "Error sending data!\t-PLAY");
+//   } else {
+//     logging(__FILE__, __FUNCTION__, __LINE__, "success...");
+//     playing = TRUE;
+//   }
 
-#ifdef HAVE_WIRINGPI
+// #ifdef HAVE_WIRINGPI
 
-  // switch gpio pin to enable relay
-  digitalWrite(LED, ON);
+//   // switch gpio pin to enable relay
+//   digitalWrite(LED, ON);
 
-  logging(__FILE__, __FUNCTION__, __LINE__, "LED ON");
+//   logging(__FILE__, __FUNCTION__, __LINE__, "LED ON");
 
-#endif /* HAVE_WIRINGPI */
+// #endif /* HAVE_WIRINGPI */
 
-  return (ret);
-}
+//   return (ret);
+// }
 
 /**
  * Opens the keyboard device file

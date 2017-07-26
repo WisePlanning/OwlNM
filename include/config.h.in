@@ -25,6 +25,7 @@
 #include <sys/time.h>
 #include <syslog.h>
 #include <unistd.h>
+#include <time.h>
 
 /* Input events */
 #cmakedefine HAVE_BSD_INPUT
@@ -97,6 +98,7 @@
 #include "key_util.h"
 #include "server.h"
 #include "video.h"
+#include "OwlNM.h"
 
 /**
  * Constants / Defaults

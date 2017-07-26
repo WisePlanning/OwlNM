@@ -23,7 +23,7 @@ char *getSensorDeviceFileName(int position) {
 	                             "grep -B1 120013 |" // Keyboard identifier
 	                             //  "grep -B1 100013 |"  // Sensor identifier
 	                             "grep -Eo event[0-9]+ |"
-	                             "tr -d '\'";
+	                             "tr -d '\n'";
 
 	/* device path prefix */
 	char path_prefix[20] = "/dev/input/";
@@ -36,8 +36,7 @@ char *getSensorDeviceFileName(int position) {
 	FILE *cmd = popen(command, "r");
 
 	if (cmd == NULL) {
-		logging(__FILE__, __FUNCTION__, __LINE__,
-		        "Could not determine sensor device file");
+		logging(__FILE__, __FUNCTION__, __LINE__, "Could not determine sensor device file");
 	}
 	/* zero the string */
 	memset(&buff, 0, 20);
@@ -58,9 +57,11 @@ char *getSensorDeviceFileName(int position) {
 		// Assumes the length of the device name is 6 chars long
 		// copy the first device name
 		strncpy(sensor_device_1, buff, 6);
+		logging(__FILE__, __FUNCTION__, __LINE__, sensor_device_1);
 
 		// copy the second device name
 		strncpy(sensor_device_2, &buff[6], 6);
+		logging(__FILE__, __FUNCTION__, __LINE__, sensor_device_2);
 	} else {
 		return 0;
 	}
@@ -85,10 +86,8 @@ void sensor1_read_callback(evutil_socket_t fd, short what, void *arg) {
 	Server *tmp = (Server *)arg;
 
 	if (what & EV_TIMEOUT) {
-		logging(__FILE__, __FUNCTION__, __LINE__, "Timeout sensor 1 ");
 
 		sensor1_timedout = TRUE;
-
 
 		if (sensor2_timedout && playing) {
 
@@ -108,7 +107,6 @@ void sensor1_read_callback(evutil_socket_t fd, short what, void *arg) {
 			playing = FALSE;
 		}
 
-		playing = FALSE;
 		return;
 	}
 
@@ -132,7 +130,7 @@ void sensor1_read_callback(evutil_socket_t fd, short what, void *arg) {
 						#ifdef HAVE_WIRINGPI
 						// switch gpio pin to disable relay
 
-						logging(__FILE__, __FUNCTION__, __LINE__, "LED OFF");
+						logging(__FILE__, __FUNCTION__, __LINE__, "LED ON");
 
 						digitalWrite(LED, ON);
 
@@ -155,7 +153,6 @@ void sensor1_read_callback(evutil_socket_t fd, short what, void *arg) {
 void sensor2_read_callback(evutil_socket_t fd, short what, void *arg) {
 	Server *tmp = (Server *)arg;
 	if (what & EV_TIMEOUT) {
-		logging(__FILE__, __FUNCTION__, __LINE__, "Timeout sensor 2 ");
 
 		sensor2_timedout = TRUE;
 
@@ -200,7 +197,7 @@ void sensor2_read_callback(evutil_socket_t fd, short what, void *arg) {
 						#ifdef HAVE_WIRINGPI
 						// switch gpio pin to disable relay
 
-						logging(__FILE__, __FUNCTION__, __LINE__, "LED OFF");
+						logging(__FILE__, __FUNCTION__, __LINE__, "LED ON");
 
 						digitalWrite(LED, ON);
 
@@ -235,11 +232,7 @@ void control_event_callback(struct bufferevent *bev, short events, void *ctx) {
 
 		sleep(5);
 
-		/* cleanup */
-		// bufferevent_free(bev);
-
 		/* Exit the current loop */
-		// event_base_loopexit(ctx, NULL);
 		event_base_loopbreak(ctx);
 
 		/* Start again */
@@ -252,11 +245,7 @@ void control_event_callback(struct bufferevent *bev, short events, void *ctx) {
 
 		sleep(5);
 
-		/* cleanup */
-		// bufferevent_free(bev);
-
 		/* Exit the current loop */
-		// event_base_loopexit(ctx, NULL);
 		event_base_loopbreak(ctx);
 
 		/* Start again */
@@ -265,6 +254,7 @@ void control_event_callback(struct bufferevent *bev, short events, void *ctx) {
 		logging(__FILE__, __FUNCTION__, __LINE__, "Timeout : Server connection");
 	}
 }
+
 
 /**
  * The loop for clients

@@ -25,6 +25,7 @@
 #include <sys/time.h>
 #include <syslog.h>
 #include <unistd.h>
+#include <time.h>
 
 /* Input events */
 /* #undef HAVE_BSD_INPUT */
