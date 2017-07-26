@@ -1,5 +1,4 @@
 #include "OwlNM.h"
-
 /**
  * Start the correct run loop based on the configuration taken from the config
  * file and over ridden by the cli switches.
@@ -12,8 +11,6 @@
  */
 int main(int argc, char *argv[]) {
 
-
-  Myprintf("%s", "testing");
   conf = NULL;
 
   /* Cli configuration struct */
