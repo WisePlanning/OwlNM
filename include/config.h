@@ -114,7 +114,7 @@
 #define KEY_PRESS 1
 
 #define MAJOR_VERSION 1
-#define MINOR_VERSION 0
+#define MINOR_VERSION 1
 
 #define DEFAULT_TIMEOUT 90
 #define UTIMEOUT 0

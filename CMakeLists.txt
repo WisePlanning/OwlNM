@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.0)
 
 project(OwlNM)
 SET (OwlNM_VERSION_MAJOR 1)
-SET (OwlNM_VERSION_MINOR 0)
+SET (OwlNM_VERSION_MINOR 1)
 
 SET (CMAKE_C_COMPILER             "clang")
 
