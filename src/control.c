@@ -380,20 +380,6 @@ int control_run_loop()
 		exit(EXIT_FAILURE);
 	}
 
-	/* libevent base object */
-	base = event_base_new();
-
-	if (!base)
-	{
-		LOG_WRITE("Could not initialize libevent! :%s\n", strerror(errno));
-
-		if (conf->log_fd)
-		{
-			fclose(conf->log_fd);
-		}
-		return (EXIT_FAILURE);
-	}
-
 	/* socket file descriptor */
 	int listen_fd = 0;
 
@@ -408,6 +394,20 @@ int control_run_loop()
 	{
 		LOG_WRITE("ERROR :%s\n", strerror(errno));
 
+	}
+
+	/* libevent base object */
+	base = event_base_new();
+
+	if (!base)
+	{
+		LOG_WRITE("Could not initialize libevent! :%s\n", strerror(errno));
+
+		if (conf->log_fd)
+		{
+			fclose(conf->log_fd);
+		}
+		return (EXIT_FAILURE);
 	}
 
 	/* create the socket */
