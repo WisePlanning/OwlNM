@@ -2,14 +2,6 @@
 #define __common_h_
 
 #include "config.h"
-#include <stdarg.h>
-
-extern int Myprintf(const char *fmt, ...);
-/* set socket to non-blocking */
-// extern void set_nonblocking(int socket);
-
-/* Reset a timer */
-// extern void reset_timer(struct timeval *tv);
 
 /* Check the program was started as root */
 extern bool rootCheck();
@@ -29,9 +21,7 @@ extern int openDeviceFile(char *deviceFile);
 /* convert to uppercase */
 extern void stoupper(char s[]);
 
-/* Convert to lowercase */
-// extern void stolower(char s[]);
-
+/* Logging */
 extern void logging(const char *file,const char *func ,int line, const char *message);
 
 #endif

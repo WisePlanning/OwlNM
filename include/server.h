@@ -7,6 +7,7 @@
 /* server loop */
 int server_run_loop();
 
+/* get the address */
 void *get_in_addr(struct sockaddr *sa);
 
 #endif
