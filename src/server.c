@@ -146,13 +146,13 @@ void buffered_on_read(struct bufferevent *bev, void *arg) {
 void buffered_on_error(struct bufferevent *bev, short what, void *arg) {
 	struct client *client = (struct client *)arg;
 
-  if (what & BEV_EVENT_EOF) {
-    /* Client disconnected, remove the read event and the
-     * free the client structure. */
-    LOG_WRITE("Client disconnected.\n");
-  } else {
-    LOG_WRITE("Client socket error, disconnecting.\n");
-  }
+	if (what & BEV_EVENT_EOF) {
+		/* Client disconnected, remove the read event and the
+		 * free the client structure. */
+		LOG_WRITE("Client disconnected.\n");
+	} else {
+		LOG_WRITE("Client socket error, disconnecting.\n");
+	}
 
 	/* Remove the client from the tailq. */
 	TAILQ_REMOVE(&client_tailq_head, client, entries);
@@ -178,24 +178,24 @@ void on_accept(int fd, short ev, void *arg) {
 	socklen_t client_len = sizeof(client_addr);
 	struct client *client;
 
-  client_fd = accept(fd, (struct sockaddr *)&client_addr, &client_len);
-  if (client_fd < 0) {
-    LOG_WRITE("accept failed\n");
-    return;
-  }
+	client_fd = accept(fd, (struct sockaddr *)&client_addr, &client_len);
+	if (client_fd < 0) {
+		LOG_WRITE("accept failed\n");
+		return;
+	}
 
-  /* Set the client socket to non-blocking mode. */
-  if (setnonblock(client_fd) < 0) {
-    LOG_WRITE("failed to set client socket non-blocking\n");
-  }
+	/* Set the client socket to non-blocking mode. */
+	if (setnonblock(client_fd) < 0) {
+		LOG_WRITE("failed to set client socket non-blocking\n");
+	}
 
 	/* We've accepted a new client, create a client object. */
 	client = calloc(1, sizeof(*client));
 
-  if (client == NULL) {
-    LOG_WRITE("Malloc failed\n");
-    err(1, "malloc failed\n");
-  }
+	if (client == NULL) {
+		LOG_WRITE("Malloc failed\n");
+		err(1, "malloc failed\n");
+	}
 
 	client->fd = client_fd;
 
@@ -216,7 +216,7 @@ void on_accept(int fd, short ev, void *arg) {
 	getnameinfo((struct sockaddr *)&client_addr, sizeof client_addr, host,
 	            sizeof host, service, sizeof service, 0);
 
-  LOG_WRITE("Accepted connection from %s (%s:%s): %d clients connected.\n", host, inet_ntoa(client_addr.sin_addr), service, clients_connected);
+	LOG_WRITE("Accepted connection from %s (%s:%s): %d clients connected.\n", host, inet_ntoa(client_addr.sin_addr), service, clients_connected);
 }
 
 /**
@@ -236,7 +236,7 @@ void *get_in_addr(struct sockaddr *sa) {
  */
 int server_run_loop() {
 
-  LOG_WRITE("Starting Server\n");
+	LOG_WRITE("Starting Server\n");
 
 	log_config(conf);
 
@@ -255,64 +255,64 @@ int server_run_loop() {
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = AI_PASSIVE; // use my IP
 
-  if ((rv = getaddrinfo(NULL, conf->port, &hints, &servinfo)) != 0) {
-    LOG_WRITE("ERROR: getaddrinfo %s\n", gai_strerror(rv));
-    return 1;
-  }
+	if ((rv = getaddrinfo(NULL, conf->port, &hints, &servinfo)) != 0) {
+		LOG_WRITE("ERROR: getaddrinfo %s\n", gai_strerror(rv));
+		return 1;
+	}
 
-  // loop through all the results and bind to the first we can
-  for (p = servinfo; p != NULL; p = p->ai_next) {
-    if ((listen_fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
-      LOG_WRITE("ERROR: socket %s\n", gai_strerror(rv));
-      continue;
-    }
+	// loop through all the results and bind to the first we can
+	for (p = servinfo; p != NULL; p = p->ai_next) {
+		if ((listen_fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
+			LOG_WRITE("ERROR: socket %s\n", gai_strerror(rv));
+			continue;
+		}
 
-    if (setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
-      LOG_WRITE("ERROR: setsocketopt %s\n", gai_strerror(rv));
-      fclose(conf->log_fd);
-      exit(1);
-    }
+		if (setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
+			LOG_WRITE("ERROR: setsocketopt %s\n", gai_strerror(rv));
+			fclose(conf->log_fd);
+			exit(1);
+		}
 
-    if (bind(listen_fd, p->ai_addr, p->ai_addrlen) == -1) {
-      close(listen_fd);
-      LOG_WRITE("ERROR: bind %s\n", gai_strerror(rv));
-      continue;
-    }
+		if (bind(listen_fd, p->ai_addr, p->ai_addrlen) == -1) {
+			close(listen_fd);
+			LOG_WRITE("ERROR: bind %s\n", gai_strerror(rv));
+			continue;
+		}
 
 		break;
 	}
 
 	freeaddrinfo(servinfo); // all done with this structure
 
-  if (p == NULL) {
-    LOG_WRITE("ERROR: failed to bind : %s", strerror(errno));
-    if (conf->log_fd) {
-      fclose(conf->log_fd);
-    }
-    exit(1);
-  }
+	if (p == NULL) {
+		LOG_WRITE("ERROR: failed to bind : %s", strerror(errno));
+		if (conf->log_fd) {
+			fclose(conf->log_fd);
+		}
+		exit(1);
+	}
 
-  if (listen(listen_fd, BACKLOG) == -1) {
-    LOG_WRITE("ERROR: listen_fd backlog = %s\n", strerror(errno));
-    if (conf->log_fd) {
-      fclose(conf->log_fd);
-    }
-    exit(1);
-  }
+	if (listen(listen_fd, BACKLOG) == -1) {
+		LOG_WRITE("ERROR: listen_fd backlog = %s\n", strerror(errno));
+		if (conf->log_fd) {
+			fclose(conf->log_fd);
+		}
+		exit(1);
+	}
 
 	sa.sa_handler = sigchld_handler; // reap all dead processes
 	sigemptyset(&sa.sa_mask);
 	sa.sa_flags = SA_RESTART;
 
-  if (sigaction(SIGCHLD, &sa, NULL) == -1) {
-    LOG_WRITE("ERROR: sigaction = %s\n", strerror(errno));
-    if (conf->log_fd) {
-      fclose(conf->log_fd);
-    }
-    exit(1);
-  }
+	if (sigaction(SIGCHLD, &sa, NULL) == -1) {
+		LOG_WRITE("ERROR: sigaction = %s\n", strerror(errno));
+		if (conf->log_fd) {
+			fclose(conf->log_fd);
+		}
+		exit(1);
+	}
 
-  LOG_WRITE("Waiting for connections\n");
+	LOG_WRITE("Waiting for connections\n");
 
 	/* Initialize libevent. */
 	evbase = event_base_new();
@@ -323,15 +323,15 @@ int server_run_loop() {
 #ifdef HAVE_AVAHI
 	pid_t pid = 0;
 
-  // Fork off the avahi service advertiser
-  if (conf->avahi) {
-    LOG_WRITE("AVAHI: Starting server\n");
-    pid = fork();
-    if (pid == 0) {
-      avahi_server();
-      return 0;
-    }
-  }
+	// Fork off the avahi service advertiser
+	if (conf->avahi) {
+		LOG_WRITE("AVAHI: Starting server\n");
+		pid = fork();
+		if (pid == 0) {
+			avahi_server();
+			return 0;
+		}
+	}
 #endif
 
 	/* We now have a listening socket, we create a read event to

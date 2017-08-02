@@ -42,11 +42,10 @@ int stop_video () {
 	int status = 0;
 	char kill_string[100];
 
-  if (conf->verbose)
-	       logging(__FILE__, __FUNCTION__, __LINE__, "KILL\n");
+	if (conf->verbose)
+		puts("Kill");
 
-
-  /* clear the memory */
+	/* clear the memory */
 	memset(&kill_string, 0, sizeof(char) * 100);
 
 	/* Create the killall string*/
