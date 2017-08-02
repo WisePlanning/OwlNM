@@ -9,6 +9,7 @@ typedef struct server
 	/* The bufferedevent for this client. */
 	struct bufferevent *buf_ev;
 } Server;
+
 /**
  * Get the device for sensor input
  * @method getSensirDeviceFileName
@@ -95,8 +96,7 @@ char *getSensorDeviceFileName(int position)
  * @param bufferevent*
  * @return void
  */
-void sensor1_read_callback(evutil_socket_t fd, short what, void *arg)
-{
+void sensor1_read_callback(evutil_socket_t fd, short what, void *arg) {
 	Server *tmp = (Server *)arg;
 
 	if (what & EV_TIMEOUT)
@@ -128,9 +128,10 @@ void sensor1_read_callback(evutil_socket_t fd, short what, void *arg)
 
 	sensor1_timedout = FALSE;
 	int ret;
+
 	input_event event;
-	if ((ret = read(fd, &event, sizeof(input_event))) > 0)
-	{ // read from it
+
+	if ((ret = read(fd, &event, sizeof(input_event))) > 0) { // read from it
 		if (event.type == EV_KEY)
 		{
 			if (event.value == KEY_PRESS)
@@ -148,7 +149,7 @@ void sensor1_read_callback(evutil_socket_t fd, short what, void *arg)
 						evbuffer_add_printf(bufferevent_get_output(tmp->buf_ev), "%s", PLAY);
 
 #ifdef HAVE_WIRINGPI
-						// switch gpio pin to disable relay
+						// switch gpio pin to enable relay
 
 						LOG_WRITE("LED ON\n");
 
@@ -202,9 +203,10 @@ void sensor2_read_callback(evutil_socket_t fd, short what, void *arg)
 	sensor2_timedout = FALSE;
 
 	int ret;
+
 	input_event event;
-	if ((ret = read(fd, &event, sizeof(input_event))) > 0)
-	{ // read from it
+
+	if ((ret = read(fd, &event, sizeof(input_event))) > 0) { // read from it
 		if (event.type == EV_KEY)
 		{
 			if (event.value == KEY_PRESS)
@@ -223,7 +225,7 @@ void sensor2_read_callback(evutil_socket_t fd, short what, void *arg)
 						evbuffer_add_printf(bufferevent_get_output(tmp->buf_ev), "%s", PLAY);
 
 #ifdef HAVE_WIRINGPI
-						// switch gpio pin to disable relay
+						// switch gpio pin to enable relay
 
 						LOG_WRITE("LED ON\n");
 
@@ -432,13 +434,16 @@ int control_run_loop()
 	/* set timeout */
 	bufferevent_set_timeouts(bev, NULL, &event_timer);
 
-	/* create the socket */
+	/* create the socket for sensor 1 */
 	sens1 = event_new(base, sensor_device_1, EV_TIMEOUT | EV_READ | EV_PERSIST, sensor1_read_callback, (void *)server);
 
+	/* add the event to the loop */
 	event_add(sens1, &event_timer);
 
+	/* create the socket for sensor 2 */
 	sens2 = event_new(base, sensor_device_2, EV_TIMEOUT | EV_READ | EV_PERSIST, sensor2_read_callback, (void *)server);
 
+	/* add the event to the loop */
 	event_add(sens2, &event_timer);
 
 	/* Start the event loop */
