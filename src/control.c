@@ -402,7 +402,7 @@ int control_run_loop()
 	/* set the callbacks */
 	bufferevent_setcb(bev, NULL, NULL, control_event_callback, base);
 
-	/* enable writing */
+	/* enable reading and writing */
 	bufferevent_enable(bev, EV_WRITE | EV_READ);
 
 	/* set timeout */
