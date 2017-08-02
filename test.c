@@ -64,15 +64,16 @@ int main() {
   base = NULL;
 
   base = event_base_new();
-  bev = bufferevent_socket_new(base, -1, BEV_OPT_CLOSE_ON_FREE);
+  int fd = open("/dev/null", 'w');
+  nul = bufferevent_socket_new(base, fd, BEV_OPT_CLOSE_ON_FREE);
   /* set the callbacks */
-  bufferevent_setcb(bev, NULL, NULL, control_event_callback, base);
+  bufferevent_setcb(nul, NULL, NULL, control_event_callback, base);
 
   /* enable writing */
-  bufferevent_enable(bev, EV_WRITE | EV_READ);
+  bufferevent_enable(nul, EV_WRITE | EV_READ);
 
   /* set timeout */
-  bufferevent_set_timeouts(bev, NULL, &event_timer);
+  bufferevent_set_timeouts(nul, NULL, &event_timer);
 
   /* Start the event loop */
   event_base_loop(base, EVLOOP_NO_EXIT_ON_EMPTY);

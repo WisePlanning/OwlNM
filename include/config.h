@@ -29,15 +29,15 @@
 #include <stdarg.h>
 
 /* Input events */
-#cmakedefine HAVE_BSD_INPUT
+/* #undef HAVE_BSD_INPUT */
 #ifdef HAVE_BSD_INPUT
 #include "/usr/src/sys/dev/evdev/input.h"
 #endif
-#cmakedefine HAVE_LINUX_INPUT
+/* #undef HAVE_LINUX_INPUT */
 #ifdef HAVE_LINUX_INPUT
 #include <linux/input.h>
 #endif
-#cmakedefine HAVE_INPUT
+/* #undef HAVE_INPUT */
 #ifdef HAVE_INPUT
 #include <input.h>
 #endif
@@ -48,7 +48,7 @@
 #endif
 
 /* Libevent. */
-#cmakedefine HAVE_LIBEVENT
+#define HAVE_LIBEVENT
 #ifdef HAVE_LIBEVENT
 /* Required by event.h. */
 
@@ -60,7 +60,7 @@
 /* Libevent. */
 
 /* Libavahi. */
-#cmakedefine HAVE_AVAHI
+/* #undef HAVE_AVAHI */
 #ifdef HAVE_AVAHI
 #include <avahi-client/client.h>
 #include <avahi-client/lookup.h>
@@ -78,7 +78,7 @@
 /* Libavahi. */
 
 /* wiringPi. */
-#cmakedefine HAVE_WIRINGPI
+/* #undef HAVE_WIRINGPI */
 #ifdef HAVE_WIRINGPI // The RPi library
 
 #include <wiringPi.h>
@@ -113,8 +113,8 @@
 #define KEY_RELEASE 0
 #define KEY_PRESS 1
 
-#define MAJOR_VERSION @OwlNM_VERSION_MAJOR@
-#define MINOR_VERSION @OwlNM_VERSION_MINOR@
+#define MAJOR_VERSION 1
+#define MINOR_VERSION 1
 
 #define DEFAULT_TIMEOUT 90
 #define UTIMEOUT 0

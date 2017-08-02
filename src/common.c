@@ -87,38 +87,39 @@ int write_log(const char *file, const char *function, int line, const char *form
 	return rv;
 }
 
-int write_log(const char *file, const char *function, int line, const char *format, ...)
-{
+// int write_log(const char *file, const char *function, int line, const char *format, ...)
+// {
 
-  time_t current_time;
-  struct tm *struct_time;
+//   time_t current_time;
+//   struct tm *struct_time;
 
-  time(&current_time);
+//   time(&current_time);
 
-  struct_time = gmtime(&current_time);
+//   struct_time = gmtime(&current_time);
 
-  va_list arg;
-  if (conf->log_fd)
-  {
-    int rv;
-    va_start(arg, format);
-    fprintf(conf->log_fd, "\n%d-%02d-%d %02d-%02d-%02d: ",
-            struct_time->tm_year + 1900, struct_time->tm_mon + 1,
-            struct_time->tm_mday, struct_time->tm_hour, struct_time->tm_min,
-            struct_time->tm_sec);
-    fprintf(conf->log_fd, "file %s:function %s:line %d:", file, function, __LINE__);
-    rv = vfprintf(conf->log_fd, format, arg);
-    va_end(arg);
-  }
+//   va_list arg;
+//     int rv;
+//   if (conf->log_fd)
+//   {
 
-  if (conf->verbose)
-  {
-    va_start(arg, format);
-    vprintf(format, arg);
-    va_end(arg);
-  }
-  return rv;
-}
+//     va_start(arg, format);
+//     fprintf(conf->log_fd, "\n%d-%02d-%d %02d-%02d-%02d: ",
+//             struct_time->tm_year + 1900, struct_time->tm_mon + 1,
+//             struct_time->tm_mday, struct_time->tm_hour, struct_time->tm_min,
+//             struct_time->tm_sec);
+//     fprintf(conf->log_fd, "file %s:function %s:line %d:", file, function, __LINE__);
+//     rv = vfprintf(conf->log_fd, format, arg);
+//     va_end(arg);
+//   }
+
+//   if (conf->verbose)
+//   {
+//     va_start(arg, format);
+//     vprintf(format, arg);
+//     va_end(arg);
+//   }
+//   return rv;
+// }
 
 /* Root is required to capture device input */
 bool rootCheck()
