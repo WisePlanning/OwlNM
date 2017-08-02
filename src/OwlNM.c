@@ -12,78 +12,80 @@
  */
 int main(int argc, char *argv[]) {
 
-  conf = NULL;
+	conf = NULL;
 
-  /* Cli configuration struct */
-  Config *cli_flags = NULL;
+	/* Cli configuration struct */
+	Config *cli_flags = NULL;
 
-  /* Conf file struct */
-  Config *conf_file = NULL;
+	/* Conf file struct */
+	Config *conf_file = NULL;
 
-  /* Clear the global conf */
-  conf = clear_config(conf);
+	/* Clear the global conf */
+	conf = clear_config(conf);
 
-  /* override config file with cli switches */
-  cli_flags = read_cli_inputs(argc, argv);
+	/* override config file with cli switches */
+	cli_flags = read_cli_inputs(argc, argv);
 
-  /* read options from config file */
-  conf_file = read_conf_file(conf,cli_flags);
+	/* read options from config file */
+	conf_file = read_conf_file(conf, cli_flags);
 
-  /* Combine */
-  conf = combine_config(cli_flags, conf_file);
+	/* Combine */
+	conf = combine_config(cli_flags, conf_file);
 
-  /* Show the config in use */
-  if (conf->verbose)
-    display_config(conf);
+	/* Show the config in use */
+	if (conf->verbose)
+		display_config(conf);
 
-	char *result = malloc(400);
-
-	strcpy(result,conf->log_path);
+/* Log create full path file name */
+	char *result = malloc(sizeof(char)*400);
+	strcpy(result, conf->log_path);
 	strcat(result, MODE_STRING[conf->mode]);
 	strcat(result, conf->log_name);
 
-	conf->log_fd = fopen(result,"a");
+	/* Open the log file */
+	conf->log_fd = fopen(result, "a");
 
+	/* free the un needed string */
 	free(result);
 
-  /* Choose the run loop for the mode selected */
-  switch (conf->mode) {
+	/* Choose the run loop for the mode selected */
+	switch (conf->mode) {
 
-  /* server mode */
-  case SERVER:
+		/* server mode */
+		case SERVER:
 
-    /* Start server loop */
-      server_run_loop();
-    break;
+			/* Start server loop */
+			server_run_loop();
+			break;
 
-  case CONTROL:
-    /* check for root permissions */
-    if (rootCheck()) {
+		case CONTROL:
+			/* check for root permissions */
+			if (rootCheck()) {
 
-      /* start the control loop */
-      control_run_loop();
-    } else {
+				/* start the control loop */
+				control_run_loop();
+			} else {
 
-      LOG_WRITE("Controller must be run as Root\n");
-      free(conf);
-      exit(EXIT_FAILURE);
-    }
-    break;
+				LOG_WRITE("Controller must be run as Root\n");
+				free(conf);
+				exit(EXIT_FAILURE);
+			}
+			break;
 
-  case CLIENT:
-    /* start the client loop */
-    client_run_loop();
-    break;
+		case CLIENT:
+			/* start the client loop */
+			client_run_loop();
+			break;
 
-  case ERROR:
-    print_usage();
-    break;
+		case ERROR:
+			print_usage();
+			break;
 
-  default:
-    print_usage();
-    break;
-  } /* switch */
+		default:
+			print_usage();
+			break;
+	} /* switch */
 
-  free(conf);
-  exit(EXIT_SUCCESS);
+	free(conf);
+	exit(EXIT_SUCCESS);
 } /* main */
