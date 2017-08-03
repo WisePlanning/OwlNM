@@ -26,7 +26,7 @@ pid_t play_video () {
 	status = posix_spawnp(&pid, "/bin/sh", NULL, NULL, arg, environ);
 
 	if (status < 0)
-		logging(__FILE__, __FUNCTION__, __LINE__, "ERROR: Couldn't start playback.");
+		LOG_WRITE("ERROR: Couldn't start playback.");
 
 	else
 		conf->playing = TRUE;

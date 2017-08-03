@@ -19,6 +19,6 @@ extern int openDeviceFile(char *deviceFile);
 extern void stoupper(char s[]);
 
 /* Logging */
-extern void logging(const char *file,const char *func ,int line, const char *message);
+int write_log(const char *file, const char *function, int line, const char *format, ...);
 
 #endif

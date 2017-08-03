@@ -7,7 +7,8 @@ typedef struct server
 	int fd;
 
 	/* The bufferedevent for this client. */
-	struct bufferevent *buf_ev;
+	struct bufferevent *server_buf_ev;
+	struct bufferevent *timer_buf_ev;
 } Server;
 
 /**
@@ -110,7 +111,7 @@ void sensor1_read_callback(evutil_socket_t fd, short what, void *arg)
 
 			LOG_WRITE("Sending Stop\n");
 
-			evbuffer_add_printf(bufferevent_get_output(tmp->buf_ev), "%s", STOP);
+			evbuffer_add_printf(bufferevent_get_output(tmp->timer_buf_ev), "%s", STOP);
 
 #ifdef HAVE_WIRINGPI
 			// switch gpio pin to disable relay
@@ -125,10 +126,10 @@ void sensor1_read_callback(evutil_socket_t fd, short what, void *arg)
 		}
 
 		return;
-	}else if (events & BEV_EVENT_EOF)
+	}else if (what & BEV_EVENT_EOF)
 	{
 		LOG_WRITE("Connection closed.\n");
-	} else if (events & BEV_EVENT_ERROR)
+	} else if (what & BEV_EVENT_ERROR)
 	{
 		LOG_WRITE("Got an error on the connection :%s\n", strerror(errno));
 	}
@@ -153,7 +154,7 @@ void sensor1_read_callback(evutil_socket_t fd, short what, void *arg)
 					{
 						LOG_WRITE("Sending Play\n");
 
-						evbuffer_add_printf(bufferevent_get_output(tmp->buf_ev), "%s", PLAY);
+						evbuffer_add_printf(bufferevent_get_output(tmp->timer_buf_ev), "%s", PLAY);
 
 #ifdef HAVE_WIRINGPI
 						// switch gpio pin to enable relay
@@ -178,67 +179,30 @@ void sensor1_read_callback(evutil_socket_t fd, short what, void *arg)
  * @param bufferevent*
  * @return void
  */
-void sensor2_read_callback(evutil_socket_t fd, short what, void *arg)
-{
+void sensor_read_callback(evutil_socket_t fd, short what, void *arg) {
 	Server *tmp = (Server *)arg;
-	if (what & EV_TIMEOUT)
-	{
-		sensor2_timedout = TRUE;
-		if (sensor1_timedout && playing)
-		{
-			LOG_WRITE("Sending Stop\n");
-			evbuffer_add_printf(bufferevent_get_output(tmp->buf_ev), "%s", STOP);
-#ifdef HAVE_WIRINGPI
-			// switch gpio pin to disable relay
-			LOG_WRITE("LED OFF\n");
-			digitalWrite(LED, OFF);
-#endif
-			playing = FALSE;
-		}
-		return;
-	} else if (events & BEV_EVENT_EOF)
-	{
-		LOG_WRITE("Connection closed.\n");
-	} else if (events & BEV_EVENT_ERROR)
-	{
-		LOG_WRITE("Got an error on the connection :%s\n", strerror(errno));
-	}
 
-	sensor2_timedout = FALSE;
+	if (what & EV_TIMEOUT) {
+		LOG_WRITE("Sending Stop\n");
+		evbuffer_add_printf(bufferevent_get_output(tmp->timer_buf_ev), "%s", STOP);
+	} else if (what & BEV_EVENT_EOF) {
+		LOG_WRITE("Connection closed.\n");
+	} else if (what & BEV_EVENT_ERROR) {
+		LOG_WRITE("Got an error on the connection :%s\n", strerror(errno));
+	} else if (what & EV_SIGNAL) {
+		LOG_WRITE("Got a signal :%s\n", strerror(errno));
+
+	}
 
 	int ret;
 
 	input_event event;
-	if ((ret = read(fd, &event, sizeof(input_event))) > 0)
-	{ // read from it
-		if (event.type == EV_KEY)
-		{
-			if (event.value == KEY_PRESS)
-			{
-
+	if ((ret = read(fd, &event, sizeof(input_event))) > 0) { // read from it
+		if (event.type == EV_KEY) {
+			if (event.value == KEY_PRESS) {
 				char *name = getKeyText(event.code, 0);
-
-				if (strcmp(name, UNKNOWN_KEY) != 0)
-				{
-
-					if (!playing)
-					{
-
-						LOG_WRITE("Sending PLAY\n");
-
-						evbuffer_add_printf(bufferevent_get_output(tmp->buf_ev), "%s", PLAY);
-
-#ifdef HAVE_WIRINGPI
-						// switch gpio pin to enable relay
-
-						LOG_WRITE("LED ON\n");
-
-						digitalWrite(LED, ON);
-
-#endif
-
-						playing = TRUE;
-					}
+				if (strcmp(name, UNKNOWN_KEY) != 0) {
+						evbuffer_add_printf(bufferevent_get_output(tmp->timer_buf_ev), "%s", PLAY);
 				}
 			}
 		}
@@ -257,13 +221,11 @@ void control_event_callback(struct bufferevent *bev, short events, void *ctx)
 
 	if (events & BEV_EVENT_CONNECTED)
 	{
-
-		LOG_WRITE("Connected\n");
+		LOG_WRITE("Server Connected\n");
 	}
 	else if (events & BEV_EVENT_EOF)
 	{
-
-		LOG_WRITE("Connection closed.\n");
+		LOG_WRITE("Server Connection closed.\n");
 
 		sleep(5);
 
@@ -275,8 +237,7 @@ void control_event_callback(struct bufferevent *bev, short events, void *ctx)
 	}
 	else if (events & BEV_EVENT_ERROR)
 	{
-
-		LOG_WRITE("Got an error on the connection :%s\n", strerror(errno));
+		LOG_WRITE("Server Got an error on the connection :%s\n", strerror(errno));
 
 		sleep(5);
 
@@ -305,30 +266,56 @@ void timer_event_callback(struct bufferevent *bev, short events, void *ctx)
 	Server *tmp = (Server *)ctx;
 	if (events & BEV_EVENT_CONNECTED)
 	{
-		LOG_WRITE("Connected\n");
+		LOG_WRITE("Timer Connected\n");
 	}
 	else if (events & BEV_EVENT_EOF)
 	{
-		LOG_WRITE("Connection closed.\n");
+		LOG_WRITE("Timer Connection closed.\n");
 	}
 	else if (events & BEV_EVENT_ERROR)
 	{
-		LOG_WRITE("Got an error on the connection :%s\n", strerror(errno));
+		LOG_WRITE("Timer Got an error on the connection :%s\n", strerror(errno));
 	}
 	else if (events & BEV_EVENT_TIMEOUT)
 	{
-		LOG_WRITE("Timeout\n");
+		LOG_WRITE("Timer Timeout\n");
 		bufferevent_enable(bev, EV_WRITE | EV_READ);
-		evbuffer_add_printf(bufferevent_get_output(tmp->buf_ev), "%s", STOP);
+		evbuffer_add_printf(bufferevent_get_output(tmp->server_buf_ev), "%s", STOP);
+
+	sensor2_timedout = FALSE;
+
 	}
 }
+
+void message_sent(struct bufferevent *bev, void *ctx){
+	 LOG_WRITE("Message Sent\n");
+
+	#ifdef HAVE_WIRINGPI
+						// switch gpio pin to enable relay
+
+						LOG_WRITE("LED ON\n");
+
+						digitalWrite(LED, ON);
+
+#endif
+}
+
 
 void write_callback(struct bufferevent *bev, void *ctx)
 {
 
 	Server *tmp = (Server *)ctx;
 	// evbuffer_add_printf(bufferevent_get_output(tmp->buf_ev), "%s", STOP);
-	evbuffer_add_buffer(bufferevent_get_output(tmp->buf_ev), bufferevent_get_output(bev));
+	evbuffer_add_buffer(bufferevent_get_output(tmp->server_buf_ev), bufferevent_get_output(bev));
+
+	size_t len = evbuffer_get_length(bufferevent_get_output(tmp->server_buf_ev));
+
+	if (len) {
+        evbuffer_drain(bufferevent_get_output(tmp->server_buf_ev), len);
+       LOG_WRITE("Drained bytes from\n");
+	}
+
+
 }
 
 /**
@@ -347,7 +334,6 @@ int control_run_loop()
 	playing = FALSE;
 
 	Server *server = malloc(sizeof(Server));
-	Server *timer = malloc(sizeof(Server));
 
 	struct event_base *base;
 
@@ -481,10 +467,10 @@ int control_run_loop()
 	}
 
 	server->fd = listen_fd;
-	server->buf_ev = bev;
+	server->server_buf_ev = bev;
 
 	/* set the callbacks */
-	bufferevent_setcb(bev, NULL, NULL, control_event_callback, base);
+	bufferevent_setcb(bev, NULL, message_sent, control_event_callback, base);
 
 	/* enable writing */
 	bufferevent_enable(bev, EV_WRITE | EV_READ);
@@ -494,12 +480,11 @@ int control_run_loop()
 
 	struct bufferevent *nul = NULL;
 
-	int fd = open("/dev/null", 'w');
+	// int fd = open("/dev/null", 'w');
 
-	nul = bufferevent_socket_new(base, fd, BEV_OPT_CLOSE_ON_FREE);
+	nul = bufferevent_socket_new(base, -1, BEV_OPT_CLOSE_ON_FREE);
 
-	timer->fd = fd;
-	timer->buf_ev = nul;
+	server->timer_buf_ev = nul;
 
 	/* set the callbacks */
 	bufferevent_setcb(nul, NULL, write_callback, timer_event_callback, server);
@@ -511,15 +496,15 @@ int control_run_loop()
 	bufferevent_set_timeouts(nul, NULL, &event_timer);
 
 	/* create the socket for sensor 1 */
-	sens1 = event_new(base, sensor_device_1, EV_TIMEOUT | EV_READ | EV_PERSIST,
-					  sensor1_read_callback, (void *)timer);
+	sens1 = event_new(base, sensor_device_1, EV_TIMEOUT | EV_READ |EV_SIGNAL| EV_PERSIST,
+					  sensor_read_callback, (void *)server);
 
 	/* add the event to the loop */
 	event_add(sens1, &event_timer);
 
 	/* create the socket for sensor 2 */
-	sens2 = event_new(base, sensor_device_2, EV_TIMEOUT | EV_READ | EV_PERSIST,
-					  sensor2_read_callback, (void *)timer);
+	sens2 = event_new(base, sensor_device_2, EV_TIMEOUT | EV_READ |EV_SIGNAL| EV_PERSIST,
+					  sensor_read_callback, (void *)server);
 
 	/* add the event to the loop */
 	event_add(sens2, &event_timer);
