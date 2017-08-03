@@ -106,32 +106,32 @@ bool rootCheck()
  * @param  sockfd     [description]
  * @return            [description]
  */
-int send_stop(int sockfd)
-{
-	int ret;
+// int send_stop(int sockfd)
+// {
+// 	int ret;
 
-	LOG_WRITE("Sending stop to server\n");
+// 	LOG_WRITE("Sending stop to server\n");
 
-	ret = send(sockfd, STOP, sizeof(STOP), 0);
+// 	ret = send(sockfd, STOP, sizeof(STOP), 0);
 
-	if (ret < 0) {
-		LOG_WRITE("Error sending data!\t-STOP\n");
-	}else  {
-		LOG_WRITE("Success: Stop sent to server\n");
-		playing = FALSE;
-	}
+// 	if (ret < 0) {
+// 		LOG_WRITE("Error sending data!\t-STOP\n");
+// 	}else  {
+// 		LOG_WRITE("Success: Stop sent to server\n");
+// 		playing = FALSE;
+// 	}
 
-#ifdef HAVE_WIRINGPI
-	// switch gpio pin to disable relay
+// #ifdef HAVE_WIRINGPI
+// 	// switch gpio pin to disable relay
 
-	LOG_WRITE("LED OFF\n");
+// 	LOG_WRITE("LED OFF\n");
 
-	digitalWrite(LED, OFF);
+// 	digitalWrite(LED, OFF);
 
-#endif
+// #endif
 
-	return (ret);
-}
+// 	return (ret);
+// }
 
 /**
  * Opens the keyboard device file
@@ -148,7 +148,6 @@ int openDeviceFile(char *deviceFile)
 
 	if (dev_fd == -1) {
 		LOG_WRITE("Could not get device :%s\n", strerror(errno));
-		return 0;
 	}
 
 	free(deviceFile);

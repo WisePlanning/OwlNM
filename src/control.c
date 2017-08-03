@@ -1,14 +1,21 @@
 #include "control.h"
 
-#define EVLOOP_NO_EXIT_ON_EMPTY 0x04
+
 typedef struct server
 {
-	/* The clients socket. */
-	int fd;
-
 	/* The bufferedevent for this client. */
+	struct event_base *base;
 	struct bufferevent *server_buf_ev;
-	struct bufferevent *timer_buf_ev;
+	struct bufferevent *sensor1_buf_ev;
+	struct bufferevent *sensor2_buf_ev;
+
+	int playing;
+	evutil_socket_t sensor1_fd;
+	evutil_socket_t sensor2_fd;
+	/* The clients socket. */
+	int server_fd;
+	struct timeval *event_timer;
+	int error_count;
 } Server;
 
 /**
@@ -24,10 +31,10 @@ char *getSensorDeviceFileName(int position)
 
 	/* get the devicenames of sensors */
 	static const char *command = "grep -E 'Handlers|EV' /proc/bus/input/devices |"
-								 "grep -B1 120013 |" // Keyboard identifier
-								 //  "grep -B1 100013 |"  // Sensor identifier
-								 "grep -Eo event[0-9]+ |"
-								 "tr -d '\n'";
+	                             "grep -B1 120013 |" // Keyboard identifier
+	                             //  "grep -B1 100013 |"  // Sensor identifier
+	                             "grep -Eo event[0-9]+ |"
+	                             "tr -d '\n'";
 
 	/* device path prefix */
 	char path_prefix[20] = "/dev/input/";
@@ -39,8 +46,7 @@ char *getSensorDeviceFileName(int position)
 	/* Run the command */
 	FILE *cmd = popen(command, "r");
 
-	if (cmd == NULL)
-	{
+	if (cmd == NULL) {
 		LOG_WRITE("Could not determine sensor device file\n");
 	}
 	/* zero the string */
@@ -58,32 +64,25 @@ char *getSensorDeviceFileName(int position)
 	/* Close the file */
 	pclose(cmd);
 
-	if (strlen(buff) > 0)
-	{
+	if (strlen(buff) > 0) {
 		// Assumes the length of the device name is 6 chars long
 
 		// copy the first device name
 		strncpy(sensor_device_1, buff, 6);
 
 		// copy the second device name
-		if (strlen(buff) > 6)
-		{
+		if (strlen(buff) > 6) {
 			strncpy(sensor_device_2, &buff[6], 6);
 		}
-	}
-	else
-	{
+	}else {
 		return 0;
 	}
 
 	/* return the sensor device */
-	if (position == 1)
-	{
+	if (position == 1) {
 		if (strlen(sensor_device_1) > 1)
 			return (strdup(strcat(path_prefix, sensor_device_1)));
-	}
-	else if (position == 2)
-	{
+	}else if (position == 2) {
 		if (strlen(sensor_device_2) > 1)
 			return (strdup(strcat(path_prefix, sensor_device_2)));
 	}
@@ -97,118 +96,105 @@ char *getSensorDeviceFileName(int position)
  * @param bufferevent*
  * @return void
  */
-void sensor1_read_callback(evutil_socket_t fd, short what, void *arg)
-{
-	Server *tmp = (Server *)arg;
+void sensor_read(struct bufferevent *bev, void *ctx){
+	Server *server = (Server *)ctx;
+	LOG_WRITE("Sensor read called\n");
 
-	if (what & EV_TIMEOUT)
-	{
+	// input_event event;
 
-		sensor1_timedout = TRUE;
+	// evbuffer_remove(bufferevent_get_input(bev), &event, sizeof(input_event));
 
-		if (sensor2_timedout && playing)
-		{
+	if (server->playing == 0) {
+		evbuffer_add_printf(bufferevent_get_output(server->server_buf_ev), "%s", PLAY);
+		server->playing = 1;
+	#ifdef HAVE_WIRINGPI
 
-			LOG_WRITE("Sending Stop\n");
+		LOG_WRITE("LED ON\n");
 
-			evbuffer_add_printf(bufferevent_get_output(tmp->timer_buf_ev), "%s", STOP);
+		// switch gpio pin to disable relay
+		digitalWrite(LED, ON);
 
-#ifdef HAVE_WIRINGPI
-			// switch gpio pin to disable relay
-
-			LOG_WRITE("LED OFF\n");
-
-			digitalWrite(LED, OFF);
-
-#endif
-
-			playing = FALSE;
-		}
-
-		return;
-	}else if (what & BEV_EVENT_EOF)
-	{
-		LOG_WRITE("Connection closed.\n");
-	} else if (what & BEV_EVENT_ERROR)
-	{
-		LOG_WRITE("Got an error on the connection :%s\n", strerror(errno));
+	#endif
+	} else {
+		evbuffer_add_printf(bufferevent_get_output(server->server_buf_ev), "c");
 	}
 
-	sensor1_timedout = FALSE;
-	int ret;
+}
 
-	input_event event;
-	if ((ret = read(fd, &event, sizeof(input_event))) > 0)
-	{ // read from it
-		if (event.type == EV_KEY)
-		{
-			if (event.value == KEY_PRESS)
-			{
+/*
+ * Called after writing the message to the network
+ */
+void message_sent(struct bufferevent *bev, void *ctx){
+	Server *server = (Server *)ctx;
 
-				char *name = getKeyText(event.code, 0);
-
-				if (strcmp(name, UNKNOWN_KEY) != 0)
-				{
-
-					if (!playing)
-					{
-						LOG_WRITE("Sending Play\n");
-
-						evbuffer_add_printf(bufferevent_get_output(tmp->timer_buf_ev), "%s", PLAY);
-
-#ifdef HAVE_WIRINGPI
-						// switch gpio pin to enable relay
-
-						LOG_WRITE("LED ON\n");
-
-						digitalWrite(LED, ON);
-
-#endif
-
-						playing = TRUE;
-					}
-				}
-			}
-		}
-	}
+	LOG_WRITE("Resetting Timer\n");
+	bufferevent_set_timeouts(bev, server->event_timer, server->event_timer);
 }
 
 /**
- * Called on when there is data to read on the sensor
- * @param void*
- * @param bufferevent*
- * @return void
+ * called on an event on the socket
+ *
+ *
  */
-void sensor_read_callback(evutil_socket_t fd, short what, void *arg) {
-	Server *tmp = (Server *)arg;
+void sensor_event(struct bufferevent *bev, short events, void *ctx)
+{
+	Server *server = (Server *)ctx;
 
-	if (what & EV_TIMEOUT) {
-		LOG_WRITE("Sending Stop\n");
-		evbuffer_add_printf(bufferevent_get_output(tmp->timer_buf_ev), "%s", STOP);
-	} else if (what & BEV_EVENT_EOF) {
-		LOG_WRITE("Connection closed.\n");
-	} else if (what & BEV_EVENT_ERROR) {
-		LOG_WRITE("Got an error on the connection :%s\n", strerror(errno));
-	} else if (what & EV_SIGNAL) {
-		LOG_WRITE("Got a signal :%s\n", strerror(errno));
+	if (events & BEV_EVENT_CONNECTED) {
+		LOG_WRITE("Sensor Connected\n");
+	} else if (events & BEV_EVENT_EOF) {
+		LOG_WRITE("Sensor Connection closed.\n");
 
-	}
+	} else if (events & BEV_EVENT_ERROR) {
+		LOG_WRITE("Sensor got an error on the connection :%s\n", strerror(errno));
 
-	int ret;
+		do {
+			if (server->sensor1_fd!=0) close(server->sensor1_fd);
+			if (server->sensor2_fd!=0) close(server->sensor2_fd);
 
-	input_event event;
-	if ((ret = read(fd, &event, sizeof(input_event))) > 0) { // read from it
-		if (event.type == EV_KEY) {
-			if (event.value == KEY_PRESS) {
-				char *name = getKeyText(event.code, 0);
-				if (strcmp(name, UNKNOWN_KEY) != 0) {
-						evbuffer_add_printf(bufferevent_get_output(tmp->timer_buf_ev), "%s", PLAY);
-				}
-			}
+			sleep(1);
+
+			/* Get the keyboard file descriptos */
+			server->sensor1_fd = openDeviceFile(getSensorDeviceFileName(1));
+			LOG_WRITE("Sensor 1 = %d\n", server->sensor1_fd);
+
+			/* Get the keyboard file descriptos */
+			server->sensor2_fd = openDeviceFile(getSensorDeviceFileName(2));
+			LOG_WRITE("Sensor 2 = %d\n", server->sensor2_fd);
+
+		} while(!(server->sensor1_fd > 0) || !(server->sensor2_fd > 0));
+
+		bufferevent_disable(server->sensor1_buf_ev, EV_WRITE | EV_READ);
+		bufferevent_disable(server->sensor2_buf_ev, EV_WRITE | EV_READ);
+
+		bufferevent_flush(server->sensor1_buf_ev, EV_WRITE | EV_READ,BEV_FLUSH);
+		bufferevent_flush(server->sensor2_buf_ev, EV_WRITE | EV_READ,BEV_FLUSH);
+
+		bufferevent_setfd(server->sensor1_buf_ev, server->sensor1_fd);
+		bufferevent_setfd(server->sensor2_buf_ev, server->sensor2_fd);
+
+		bufferevent_enable(server->sensor1_buf_ev, EV_WRITE | EV_READ);
+		bufferevent_enable(server->sensor2_buf_ev, EV_WRITE | EV_READ);
+
+		++server->error_count;
+		// recurring error forces restart
+		if (server->error_count > 5) {
+		LOG_WRITE("Error count > 5 : restarting\n");
+
+			sleep(5);
+
+			/* Exit the current loop */
+			event_base_loopbreak(server->base);
+
+		/* Start again */
+			control_run_loop();
 		}
+	} else if (events & BEV_EVENT_TIMEOUT) {
+		LOG_WRITE("Timeout : Sensor connection\n");
+		evbuffer_add_printf(bufferevent_get_output(server->server_buf_ev), " ");
+		bufferevent_enable(bev, EV_WRITE | EV_READ);
 	}
 }
-
 /**
  * Called on socket event
  * @param void*
@@ -218,105 +204,123 @@ void sensor_read_callback(evutil_socket_t fd, short what, void *arg) {
  */
 void control_event_callback(struct bufferevent *bev, short events, void *ctx)
 {
-
-	if (events & BEV_EVENT_CONNECTED)
-	{
+	Server *server = (Server *)ctx;
+	if (events & BEV_EVENT_CONNECTED) {
 		LOG_WRITE("Server Connected\n");
-	}
-	else if (events & BEV_EVENT_EOF)
-	{
+	}else if (events & BEV_EVENT_EOF) {
 		LOG_WRITE("Server Connection closed.\n");
 
-		sleep(5);
+		bufferevent_disable(server->server_buf_ev, EV_WRITE | EV_READ);
 
-		/* Exit the current loop */
-		event_base_loopbreak(ctx);
+		++server->error_count;
+		// recurring error forces restart
+
+		if (server->error_count > 5) {
+		LOG_WRITE("Error count > 5 : restarting\n");
+
+			sleep(5);
+			/* Exit the current loop */
+			event_base_loopbreak(server->base);
 
 		/* Start again */
-		control_run_loop();
-	}
-	else if (events & BEV_EVENT_ERROR)
-	{
+			control_run_loop();
+		}
+
+		sleep(1);
+
+// if there is no server address,
+#ifdef HAVE_AVAHI
+		if (conf->avahi || NULL == conf->server_address) {
+			do
+			{
+				avahi_client();
+			} while (NULL == conf->server_address);
+		}
+#endif
+
+		if (NULL == conf->server_address) {
+			LOG_WRITE("No server address\n");
+			if (conf->log_fd) {
+				fclose(conf->log_fd);
+			}
+			exit(EXIT_FAILURE);
+		}
+
+		/* Get and connect a socket */
+		do
+		{ if (server->server_fd) close(server->server_fd);
+		  server->server_fd = get_socket();} while (server->server_fd <= 0);
+
+		bufferevent_setfd(server->server_buf_ev, server->server_fd);
+		bufferevent_enable(server->server_buf_ev, EV_WRITE | EV_READ);
+
+
+	}else if (events & BEV_EVENT_ERROR) {
 		LOG_WRITE("Server Got an error on the connection :%s\n", strerror(errno));
 
-		sleep(5);
+		bufferevent_disable(server->server_buf_ev, EV_WRITE | EV_READ);
 
-		/* Exit the current loop */
-		event_base_loopbreak(ctx);
+		++server->error_count;
+		// recurring error forces restart
+
+		if (server->error_count > 5) {
+		LOG_WRITE("Error count > 5 : restarting\n");
+
+			sleep(5);
+
+			/* Exit the current loop */
+			event_base_loopbreak(server->base);
 
 		/* Start again */
-		control_run_loop();
-	}
-	else if (events & BEV_EVENT_TIMEOUT)
-	{
+			control_run_loop();
+		}
+
+		sleep(1);
+
+// if there is no server address,
+#ifdef HAVE_AVAHI
+		if (conf->avahi || NULL == conf->server_address) {
+			do
+			{
+				avahi_client();
+			} while (NULL == conf->server_address);
+		}
+#endif
+
+		if (NULL == conf->server_address) {
+			LOG_WRITE("No server address\n");
+			if (conf->log_fd) {
+				fclose(conf->log_fd);
+			}
+			exit(EXIT_FAILURE);
+		}
+
+		/* Get and connect a socket */
+		do
+		{ if (server->server_fd) close(server->server_fd);
+		  server->server_fd = get_socket();} while (server->server_fd <= 0);
+		LOG_WRITE("New network socket is %i\n", server->server_fd);
+		bufferevent_setfd(server->server_buf_ev, server->server_fd);
+		bufferevent_enable(server->server_buf_ev, EV_WRITE | EV_READ);
+
+
+	}else if (events & BEV_EVENT_TIMEOUT) {
 		LOG_WRITE("Timeout : Server connection\n");
-		bufferevent_enable(bev, EV_WRITE | EV_READ);
-	}
-}
+		evbuffer_add_printf(bufferevent_get_output(bev), "%s", STOP);
 
-/**
- * Called on socket event
- * @param void*
- * @param short
- * @param bufferevent*
- * @return void
- */
-void timer_event_callback(struct bufferevent *bev, short events, void *ctx)
-{
-	Server *tmp = (Server *)ctx;
-	if (events & BEV_EVENT_CONNECTED)
-	{
-		LOG_WRITE("Timer Connected\n");
-	}
-	else if (events & BEV_EVENT_EOF)
-	{
-		LOG_WRITE("Timer Connection closed.\n");
-	}
-	else if (events & BEV_EVENT_ERROR)
-	{
-		LOG_WRITE("Timer Got an error on the connection :%s\n", strerror(errno));
-	}
-	else if (events & BEV_EVENT_TIMEOUT)
-	{
-		LOG_WRITE("Timer Timeout\n");
-		bufferevent_enable(bev, EV_WRITE | EV_READ);
-		evbuffer_add_printf(bufferevent_get_output(tmp->server_buf_ev), "%s", STOP);
+#ifdef HAVE_WIRINGPI
 
-	sensor2_timedout = FALSE;
+		LOG_WRITE("LED OFF\n");
 
-	}
-}
-
-void message_sent(struct bufferevent *bev, void *ctx){
-	 LOG_WRITE("Message Sent\n");
-
-	#ifdef HAVE_WIRINGPI
-						// switch gpio pin to enable relay
-
-						LOG_WRITE("LED ON\n");
-
-						digitalWrite(LED, ON);
+		// switch gpio pin to disable relay
+		digitalWrite(LED, OFF);
 
 #endif
-}
-
-
-void write_callback(struct bufferevent *bev, void *ctx)
-{
-
-	Server *tmp = (Server *)ctx;
-	// evbuffer_add_printf(bufferevent_get_output(tmp->buf_ev), "%s", STOP);
-	evbuffer_add_buffer(bufferevent_get_output(tmp->server_buf_ev), bufferevent_get_output(bev));
-
-	size_t len = evbuffer_get_length(bufferevent_get_output(tmp->server_buf_ev));
-
-	if (len) {
-        evbuffer_drain(bufferevent_get_output(tmp->server_buf_ev), len);
-       LOG_WRITE("Drained bytes from\n");
+		server->playing = 0;
+		bufferevent_enable(bev, EV_WRITE | EV_READ);
 	}
-
-
 }
+
 
 /**
  * The loop for clients
@@ -329,73 +333,34 @@ int control_run_loop()
 
 	log_config(conf);
 
-	sensor1_timedout = TRUE;
-	sensor2_timedout = TRUE;
-	playing = FALSE;
-
 	Server *server = malloc(sizeof(Server));
+	server->base = NULL;
+	server->sensor1_buf_ev = NULL;
+	server->sensor2_buf_ev = NULL;
+	server->server_buf_ev = NULL;
+	server->event_timer = NULL;
+	server->error_count = 0;
+	struct event_base *base = NULL;
+	struct bufferevent *server_buf_ev = NULL;
+	struct bufferevent *sensor1_buf_ev = NULL;
+	struct bufferevent *sensor2_buf_ev= NULL;
 
-	struct event_base *base;
+	/* The clients socket. */
+	server->server_fd = 0;
+	evutil_socket_t server_fd = 0;
+	evutil_socket_t sensor_device_1 = 0;
+	evutil_socket_t sensor_device_2 = 0;
+
+	/*playing flag*/
+	server->playing = 0;
 
 	/* Sensor 1 */
-	int sensor_device_1 = 0;
-	struct event *sens1 = NULL;
-
-	/* Sensor 2 */
-	int sensor_device_2 = 0;
-	struct event *sens2 = NULL;
-
-	/* Server connection */
-	struct bufferevent *bev = NULL;
-
 	struct timeval event_timer = {conf->timeout, 0};
-
-	base = NULL;
-
-	/* Get the keyboard file descriptos */
-	sensor_device_1 = openDeviceFile(getSensorDeviceFileName(1));
-
-	LOG_WRITE("Sensor 1 = %d\n", sensor_device_1);
-
-	/* Get the keyboard file descriptos */
-	sensor_device_2 = openDeviceFile(getSensorDeviceFileName(2));
-
-	LOG_WRITE("Sensor 2 = %d\n", sensor_device_2);
-
-	if (!(sensor_device_1 > 0) || !(sensor_device_2 > 0))
-	{
-		LOG_WRITE("Could not get sensors\n");
-
-		if (conf->log_fd)
-		{
-			fclose(conf->log_fd);
-		}
-		exit(EXIT_FAILURE);
-	}
-
-#ifdef HAVE_WIRINGPI
-	if (wiringPiSetupGpio() == -1)
-	{
-		LOG_WRITE("Could not open GPIO\n");
-		if (conf->log_fd)
-		{
-			fclose(conf->log_fd);
-		}
-		exit(EXIT_FAILURE);
-	}
-	// set the pin to output
-	pinMode(LED, OUTPUT);
-
-	LOG_WRITE("LED OFF\n");
-
-	// switch gpio pin to disable relay
-	digitalWrite(LED, OFF);
-#endif
+	server->event_timer = &event_timer;
 
 // if there is no server address,
 #ifdef HAVE_AVAHI
-	if (conf->avahi || NULL == conf->server_address)
-	{
+	if (conf->avahi || NULL == conf->server_address) {
 		do
 		{
 			avahi_client();
@@ -403,11 +368,9 @@ int control_run_loop()
 	}
 #endif
 
-	if (NULL == conf->server_address)
-	{
+	if (NULL == conf->server_address) {
 		LOG_WRITE("No server address\n");
-		if (conf->log_fd)
-		{
+		if (conf->log_fd) {
 			fclose(conf->log_fd);
 		}
 		exit(EXIT_FAILURE);
@@ -415,120 +378,107 @@ int control_run_loop()
 
 	/* libevent base object */
 	base = event_base_new();
+	server->base = base;
 
-	if (!base)
-	{
+	if (!server->base) {
 		LOG_WRITE("Could not initialize libevent! :%s\n", strerror(errno));
 
-		if (conf->log_fd)
-		{
+		if (conf->log_fd) {
 			fclose(conf->log_fd);
 		}
 		return (EXIT_FAILURE);
 	}
 
 	/* socket file descriptor */
-	int listen_fd = 0;
+	server->server_fd = 0;
 
-	/* Get  and connect a socket */
+	/* Get and connect a socket */
 	do
 	{
-		listen_fd = get_socket();
-	} while (listen_fd <= 0);
+		server_fd = get_socket();
+	} while (server_fd <= 0);
 
-	/* Kill any running video players */
-	if (!send_stop(listen_fd))
-	{
-		LOG_WRITE("ERROR :%s\n", strerror(errno));
-	}
+	server->server_fd = server_fd;
 
-	/* libevent base object */
-	base = event_base_new();
+	do {
+		sleep(1);
 
-	if (!base)
-	{
-		LOG_WRITE("Could not initialize libevent! :%s\n", strerror(errno));
+		/* Get the keyboard file descriptos */
+		sensor_device_1 = openDeviceFile(getSensorDeviceFileName(1));
+		LOG_WRITE("Sensor 1 = %d\n", sensor_device_1);
 
-		if (conf->log_fd)
-		{
-			fclose(conf->log_fd);
-		}
-		return (EXIT_FAILURE);
-	}
+		/* Get the keyboard file descriptos */
+		sensor_device_2 = openDeviceFile(getSensorDeviceFileName(2));
+		LOG_WRITE("Sensor 2 = %d\n", sensor_device_2);
+	} while(!(sensor_device_1 > 0) || !(sensor_device_2 > 0));
+
+	server->sensor1_fd = sensor_device_1;
+	server->sensor2_fd = sensor_device_2;
 
 	/* create the socket */
-	bev = bufferevent_socket_new(base, listen_fd, BEV_OPT_CLOSE_ON_FREE);
+	server_buf_ev = bufferevent_socket_new(base, server_fd, BEV_OPT_CLOSE_ON_FREE);
+	server->server_buf_ev = server_buf_ev;
 
-	if (!bev)
-	{
-		LOG_WRITE("ERROR : bev\n");
+	if (!server_buf_ev ) {
+		LOG_WRITE("ERROR :server_buf_ev\n");
 
 		exit(EXIT_FAILURE);
 	}
-
-	server->fd = listen_fd;
-	server->server_buf_ev = bev;
-
 	/* set the callbacks */
-	bufferevent_setcb(bev, NULL, message_sent, control_event_callback, base);
+	bufferevent_setcb(server_buf_ev, NULL, message_sent, control_event_callback, server);
+	bufferevent_enable(server_buf_ev, EV_WRITE | EV_READ);
+	bufferevent_set_timeouts(server_buf_ev, &event_timer, &event_timer);
+	// LOG_WRITE("Sending Initial STOP\n");
+	// evbuffer_add_printf(bufferevent_get_output(server_buf_ev), "%s", STOP);
 
-	/* enable writing */
-	bufferevent_enable(bev, EV_WRITE | EV_READ);
+#ifdef HAVE_WIRINGPI
+	if (wiringPiSetupGpio() == -1) {
+		LOG_WRITE("Could not open GPIO\n");
+		if (conf->log_fd) {
+			fclose(conf->log_fd);
+		}
+		exit(EXIT_FAILURE);
+	}
+	// set the pin to output
+	pinMode(LED, OUTPUT);
 
-	/* set timeout */
-	// bufferevent_set_timeouts(bev, NULL, &event_timer);
+	// LOG_WRITE("LED OFF\n");
 
-	struct bufferevent *nul = NULL;
+	// // switch gpio pin to disable relay
+	// digitalWrite(LED, OFF);
+	// playing = 0;
+	server->playing = 0;
+#endif
 
-	// int fd = open("/dev/null", 'w');
+	/*Sensor 1*/
+	sensor1_buf_ev = bufferevent_socket_new(base, sensor_device_1, BEV_OPT_CLOSE_ON_FREE);
+	if (!sensor1_buf_ev ) {
+		LOG_WRITE("ERROR : sensor1_buf_ev\n");
 
-	nul = bufferevent_socket_new(base, -1, BEV_OPT_CLOSE_ON_FREE);
+		exit(EXIT_FAILURE);
+	}
+	server->sensor1_buf_ev = sensor1_buf_ev;
+	bufferevent_setcb(sensor1_buf_ev, sensor_read, NULL, sensor_event, server);
+	bufferevent_enable(sensor1_buf_ev, EV_WRITE | EV_READ);
 
-	server->timer_buf_ev = nul;
+	/*Sensor 2*/
+	sensor2_buf_ev = bufferevent_socket_new(base, sensor_device_2, BEV_OPT_CLOSE_ON_FREE);
+	if (!sensor2_buf_ev ) {
+		LOG_WRITE("ERROR : sensor2_buf_ev\n");
 
-	/* set the callbacks */
-	bufferevent_setcb(nul, NULL, write_callback, timer_event_callback, server);
-
-	/* enable writing */
-	bufferevent_enable(nul, EV_WRITE | EV_READ);
-
-	/* set timeout */
-	bufferevent_set_timeouts(nul, NULL, &event_timer);
-
-	/* create the socket for sensor 1 */
-	sens1 = event_new(base, sensor_device_1, EV_TIMEOUT | EV_READ |EV_SIGNAL| EV_PERSIST,
-					  sensor_read_callback, (void *)server);
-
-	/* add the event to the loop */
-	event_add(sens1, &event_timer);
-
-	/* create the socket for sensor 2 */
-	sens2 = event_new(base, sensor_device_2, EV_TIMEOUT | EV_READ |EV_SIGNAL| EV_PERSIST,
-					  sensor_read_callback, (void *)server);
-
-	/* add the event to the loop */
-	event_add(sens2, &event_timer);
+		exit(EXIT_FAILURE);
+	}
+	server->sensor2_buf_ev = sensor2_buf_ev;
+	bufferevent_setcb(sensor2_buf_ev, sensor_read, NULL, sensor_event, server);
+	bufferevent_enable(sensor2_buf_ev, EV_WRITE | EV_READ);
 
 	/* Start the event loop */
 	event_base_loop(base, EVLOOP_NO_EXIT_ON_EMPTY);
 
-	/* Free the server connection event */
-	bufferevent_free(bev);
-
-	/* Free the sensor events */
-	event_free(sens1);
-	event_free(sens2);
-
-	// free the event base
-	event_base_free(base);
-
-	/* Close file descriptors */
-	close(sensor_device_1);
-	// close(sensor_device_2);
-	close(listen_fd);
+	free(server);
 
 	// exit
 	fclose(conf->log_fd);
 
-	exit(EXIT_SUCCESS);
+	return(EXIT_SUCCESS);
 }
