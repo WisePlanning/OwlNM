@@ -87,39 +87,6 @@ int write_log(const char *file, const char *function, int line, const char *form
 	return rv;
 }
 
-int write_log(const char *file, const char *function, int line, const char *format, ...)
-{
-
-  time_t current_time;
-  struct tm *struct_time;
-
-  time(&current_time);
-
-  struct_time = gmtime(&current_time);
-
-  va_list arg;
-  if (conf->log_fd)
-  {
-    int rv;
-    va_start(arg, format);
-    fprintf(conf->log_fd, "\n%d-%02d-%d %02d-%02d-%02d: ",
-            struct_time->tm_year + 1900, struct_time->tm_mon + 1,
-            struct_time->tm_mday, struct_time->tm_hour, struct_time->tm_min,
-            struct_time->tm_sec);
-    fprintf(conf->log_fd, "file %s:function %s:line %d:", file, function, __LINE__);
-    rv = vfprintf(conf->log_fd, format, arg);
-    va_end(arg);
-  }
-
-  if (conf->verbose)
-  {
-    va_start(arg, format);
-    vprintf(format, arg);
-    va_end(arg);
-  }
-  return rv;
-}
-
 /* Root is required to capture device input */
 bool rootCheck()
 {
@@ -139,32 +106,32 @@ bool rootCheck()
  * @param  sockfd     [description]
  * @return            [description]
  */
-int send_stop(int sockfd)
-{
-	int ret;
+// int send_stop(int sockfd)
+// {
+// 	int ret;
 
-	LOG_WRITE("Sending stop to server\n");
+// 	LOG_WRITE("Sending stop to server\n");
 
-	ret = send(sockfd, STOP, sizeof(STOP), 0);
+// 	ret = send(sockfd, STOP, sizeof(STOP), 0);
 
-	if (ret < 0) {
-		LOG_WRITE("Error sending data!\t-STOP\n");
-	}else  {
-		LOG_WRITE("Success: Stop sent to server\n");
-		playing = FALSE;
-	}
+// 	if (ret < 0) {
+// 		LOG_WRITE("Error sending data!\t-STOP\n");
+// 	}else  {
+// 		LOG_WRITE("Success: Stop sent to server\n");
+// 		playing = FALSE;
+// 	}
 
-#ifdef HAVE_WIRINGPI
-	// switch gpio pin to disable relay
+// #ifdef HAVE_WIRINGPI
+// 	// switch gpio pin to disable relay
 
-	LOG_WRITE("LED OFF\n");
+// 	LOG_WRITE("LED OFF\n");
 
-	digitalWrite(LED, OFF);
+// 	digitalWrite(LED, OFF);
 
-#endif
+// #endif
 
-	return (ret);
-}
+// 	return (ret);
+// }
 
 /**
  * Opens the keyboard device file
@@ -181,7 +148,6 @@ int openDeviceFile(char *deviceFile)
 
 	if (dev_fd == -1) {
 		LOG_WRITE("Could not get device :%s\n", strerror(errno));
-		return 0;
 	}
 
 	free(deviceFile);
