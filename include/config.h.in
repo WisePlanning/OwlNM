@@ -96,7 +96,6 @@
 
 // OwlNM sources
 #include "common.h"
-#include "key_util.h"
 #include "OwlNM.h"
 #include "client.h"
 #include "control.h"

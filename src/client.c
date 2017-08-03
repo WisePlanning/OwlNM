@@ -1,3 +1,4 @@
+
 #include "client.h"
 typedef struct client
 {
@@ -5,11 +6,12 @@ typedef struct client
 	struct event_base *base;
 	struct bufferevent *client_buf_ev;
 
+	/* The clients socket. */
 	evutil_socket_t client_fd;
 
-	/* The clients socket. */
 	struct timeval *event_timer;
 	int error_count;
+
 } Client;
 
 /**
@@ -20,7 +22,6 @@ typedef struct client
  */
 void read_callback(struct bufferevent *bev, void *ctx)
 {
-	Client *client = (Client *)ctx;
 	int n;
 	char buf[BUF_SIZE];
 	char buffer[BUF_SIZE];
@@ -33,16 +34,20 @@ void read_callback(struct bufferevent *bev, void *ctx)
 	}
 
 	/* process */
-	if (strncmp(buffer, PLAY, 4) == 0) {
+	if (strncmp(buffer, PLAY, 4) == 0)
+	{
 		/* Start the video player */
-		if (!play_video()) {
+		if (!play_video())
+		{
 			LOG_WRITE("Error:  %s", strerror(errno));
 		}
 	}
 
-	if ((strncmp(buffer, STOP, 4) == 0)) {
+	if ((strncmp(buffer, STOP, 4) == 0))
+	{
 		/* Kill any running video players */
-		if (!stop_video()) {
+		if (!stop_video())
+		{
 			LOG_WRITE("Error: %s", strerror(errno));
 		}
 	}
@@ -58,16 +63,19 @@ void read_callback(struct bufferevent *bev, void *ctx)
 void event_callback(struct bufferevent *bev, short events, void *ctx)
 {
 	Client *client = (Client *)ctx;
-	if (events & BEV_EVENT_CONNECTED) {
-
+	if (events & BEV_EVENT_CONNECTED)
+	{
 		LOG_WRITE("Connected\n");
-	}else if (events & BEV_EVENT_EOF)  {
-
+	}
+	else if (events & BEV_EVENT_EOF)
+	{
 		LOG_WRITE("Connection closed.\n");
+		bufferevent_disable(bev, EV_READ);
 
 // if there is no server address,
 #ifdef HAVE_AVAHI
-		if (conf->avahi || NULL == conf->server_address) {
+		if (conf->avahi || NULL == conf->server_address)
+		{
 			do
 			{
 				avahi_client();
@@ -75,9 +83,11 @@ void event_callback(struct bufferevent *bev, short events, void *ctx)
 		}
 #endif
 
-		if (NULL == conf->server_address) {
+		if (NULL == conf->server_address)
+		{
 			LOG_WRITE("No server address\n");
-			if (conf->log_fd) {
+			if (conf->log_fd)
+			{
 				fclose(conf->log_fd);
 			}
 			exit(EXIT_FAILURE);
@@ -85,36 +95,43 @@ void event_callback(struct bufferevent *bev, short events, void *ctx)
 
 		/* Get and connect a socket */
 		do
-		{ if (client->client_fd) close(client->client_fd);
-		  client->client_fd = get_socket();
+		{
+			sleep(1);
+			if (client->client_fd)
+				close(client->client_fd);
+			client->client_fd = get_socket();
 		} while (client->client_fd <= 0);
 
 		LOG_WRITE("New network socket is %i\n", client->client_fd);
-		bufferevent_setfd(client->client_buf_ev, client->client_fd);
-		bufferevent_enable(client->client_buf_ev, EV_READ);
+		bufferevent_setfd(bev, client->client_fd);
+		bufferevent_enable(bev, EV_READ);
 
 		++client->error_count;
 
 		// recurring error forces restart
-		if (client->error_count > 5) {
-		LOG_WRITE("Error count > 5 : restarting\n");
+		if (client->error_count > 5)
+		{
+			LOG_WRITE("Error count > 5 : restarting\n");
 
 			sleep(5);
 
 			/* Exit the current loop */
 			event_base_loopbreak(client->base);
 
-		/* Start again */
+			/* Start again */
 			control_run_loop();
 		}
-
-	}else if (events & BEV_EVENT_ERROR)  {
-
+	}
+	else if (events & BEV_EVENT_ERROR)
+	{
 		LOG_WRITE("Got an error on the connection :%s\n", strerror(errno));
+		bufferevent_disable(bev, EV_READ);
+		sleep(1);
 
 // if there is no server address,
 #ifdef HAVE_AVAHI
-		if (conf->avahi || NULL == conf->server_address) {
+		if (conf->avahi || NULL == conf->server_address)
+		{
 			do
 			{
 				avahi_client();
@@ -122,9 +139,11 @@ void event_callback(struct bufferevent *bev, short events, void *ctx)
 		}
 #endif
 
-		if (NULL == conf->server_address) {
+		if (NULL == conf->server_address)
+		{
 			LOG_WRITE("No server address\n");
-			if (conf->log_fd) {
+			if (conf->log_fd)
+			{
 				fclose(conf->log_fd);
 			}
 			exit(EXIT_FAILURE);
@@ -132,26 +151,30 @@ void event_callback(struct bufferevent *bev, short events, void *ctx)
 
 		/* Get and connect a socket */
 		do
-		{ if (client->client_fd) close(client->client_fd);
-		  client->client_fd = get_socket();
+		{
+			sleep(1);
+			if (client->client_fd)
+				close(client->client_fd);
+			client->client_fd = get_socket();
 		} while (client->client_fd <= 0);
 
 		LOG_WRITE("New network socket is %i\n", client->client_fd);
-		bufferevent_setfd(client->client_buf_ev, client->client_fd);
-		bufferevent_enable(client->client_buf_ev, EV_READ);
+		bufferevent_setfd(bev, client->client_fd);
+		bufferevent_enable(bev, EV_READ);
 
 		++client->error_count;
 
 		// recurring error forces restart
-		if (client->error_count > 5) {
-		LOG_WRITE("Error count > 5 : restarting\n");
+		if (client->error_count > 5)
+		{
+			LOG_WRITE("Error count > 5 : restarting\n");
 
 			sleep(5);
 
 			/* Exit the current loop */
 			event_base_loopbreak(client->base);
 
-		/* Start again */
+			/* Start again */
 			control_run_loop();
 		}
 	}
@@ -175,7 +198,8 @@ int client_run_loop()
 	client->base = NULL;
 
 	/* Kill any running video players */
-	if (!stop_video()) {
+	if (!stop_video())
+	{
 		LOG_WRITE("ERROR : %s", strerror(errno));
 	}
 
@@ -185,7 +209,8 @@ int client_run_loop()
 
 // if there is no server address,
 #ifdef HAVE_AVAHI
-	if (conf->avahi || NULL == conf->server_address) {
+	if (conf->avahi || NULL == conf->server_address)
+	{
 		do
 		{
 			avahi_client();
@@ -193,9 +218,11 @@ int client_run_loop()
 	}
 #endif
 
-	if (NULL == conf->server_address) {
+	if (NULL == conf->server_address)
+	{
 		LOG_WRITE("No server address\n");
-		if (conf->log_fd) {
+		if (conf->log_fd)
+		{
 			fclose(conf->log_fd);
 		}
 		exit(EXIT_FAILURE);
@@ -207,7 +234,8 @@ int client_run_loop()
 	if (!base)
 	{
 		LOG_WRITE("Could not initialize libevent!: %s\n", strerror(errno));
-		if (conf->log_fd) {
+		if (conf->log_fd)
+		{
 			fclose(conf->log_fd);
 		}
 		exit(EXIT_FAILURE);
@@ -221,9 +249,7 @@ int client_run_loop()
 	{
 		listen_fd = get_socket();
 	} while (listen_fd <= 0);
-	client->clent_fd = listen_fd;
-
-	LOG_WRITE("Connected\n");
+	client->client_fd = listen_fd;
 
 	/* create the socket */
 	bev = bufferevent_socket_new(base, listen_fd, BEV_OPT_CLOSE_ON_FREE);
@@ -248,6 +274,9 @@ int client_run_loop()
 
 	// close the listening socket
 	close(listen_fd);
+
+	// free the struct
+	free(client);
 
 	// exit
 	fclose(conf->log_fd);

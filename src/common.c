@@ -31,6 +31,8 @@ int get_socket()
 		if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1)
 		{
 			LOG_WRITE("ERROR: socket : %s\n", strerror(errno));
+			close(sockfd);
+			sockfd = 0;
 			continue;
 		}
 
@@ -38,8 +40,11 @@ int get_socket()
 		{
 			LOG_WRITE("ERROR: connect : %s\n", strerror(errno));
 			close(sockfd);
+			sockfd = 0;
 			continue;
 		}
+
+		LOG_WRITE("Connected\n");
 		break; // if we get here, we must have connected successfully
 	}
 
