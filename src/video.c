@@ -8,13 +8,13 @@
 pid_t play_video () {
 	if (conf->playing)
 		return 0;
+
 	int status = 0;
 	pid_t pid;
 	extern char **environ;
 	char play_string[100];
 
-	if (conf->verbose)
-		puts("Play\n");
+	LOG_WRITE("Play\n");
 
 	/* Create the string to call the spawned process */
 	sprintf(play_string, "%s --loop %s ", conf->video_player, conf->video_file);
@@ -42,8 +42,7 @@ int stop_video () {
 	int status = 0;
 	char kill_string[100];
 
-	if (conf->verbose)
-		puts("Kill");
+	LOG_WRITE("Kill");
 
 	/* clear the memory */
 	memset(&kill_string, 0, sizeof(char) * 100);
