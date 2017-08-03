@@ -150,6 +150,7 @@ static const char *MODE_STRING[] = {FOREACH_MODE(GENERATE_STRING)};
 
 typedef struct input_event input_event;
 
+#define EVLOOP_NO_EXIT_ON_EMPTY 0x04
 
 /* Config struct */
 typedef struct config_obj {
