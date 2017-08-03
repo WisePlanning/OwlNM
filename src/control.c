@@ -428,8 +428,6 @@ int control_run_loop()
 	bufferevent_setcb(server_buf_ev, NULL, message_sent, control_event_callback, server);
 	bufferevent_enable(server_buf_ev, EV_WRITE | EV_READ);
 	bufferevent_set_timeouts(server_buf_ev, &event_timer, &event_timer);
-	// LOG_WRITE("Sending Initial STOP\n");
-	// evbuffer_add_printf(bufferevent_get_output(server_buf_ev), "%s", STOP);
 
 #ifdef HAVE_WIRINGPI
 	if (wiringPiSetupGpio() == -1) {
@@ -442,11 +440,6 @@ int control_run_loop()
 	// set the pin to output
 	pinMode(LED, OUTPUT);
 
-	// LOG_WRITE("LED OFF\n");
-
-	// // switch gpio pin to disable relay
-	// digitalWrite(LED, OFF);
-	// playing = 0;
 	server->playing = 0;
 #endif
 
